@@ -100,9 +100,6 @@ export function useAlbionData() {
             case 'royal':
               chunkResults = analyzeRoyalBM(chunkData, settings, filters);
               break;
-            case 'enchant':
-              chunkResults = analyzeEnchanting(chunkData, settings, filters, currentEnchantMaterials);
-              break;
             case 'buyorders':
               chunkResults = analyzeBuyOrderTrades(chunkData, settings, filters);
               break;
@@ -113,6 +110,12 @@ export function useAlbionData() {
             allResults.sort((a, b) => b.score - a.score);
             setResults([...allResults]);
           }
+        }
+
+        if (currentTab === 'enchant') {
+          setProgress({ current: itemIds.length, total: itemIds.length, text: 'Processando encantamentos...' });
+          allResults = analyzeEnchanting(allData, settings, filters, currentEnchantMaterials);
+          setResults([...allResults]);
         }
 
         // Fetch Volumes for all results (or at least top 1000 since it is fast now)

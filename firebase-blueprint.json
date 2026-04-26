@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile containing silver and material inventory.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's ID" },
+        "silver": { "type": "number", "description": "The user's free silver." },
+        "inventory": {
+          "type": "object",
+          "description": "The user's inventory of materials.",
+          "additionalProperties": { "type": "number" }
+        },
+        "premium": { "type": "boolean", "description": "Does the user have premium status?", "default": false },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "silver", "inventory", "updatedAt"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "An AI-generated analysis report.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user profiles."
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Stores generated reports."
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from 'sonner';
+import { AuthProvider } from '@/components/auth/AuthProvider';
 
 export const metadata: Metadata = {
   title: 'Albion Pro Flipper',
@@ -12,7 +13,9 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     <html lang="pt-BR" className="dark">
       <body className="bg-[#0b0c10] text-slate-100 min-h-screen selection:bg-amber-500/30 font-sans" suppressHydrationWarning>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-900/10 via-[#0b0c10] to-[#0b0c10] pointer-events-none z-[-1]" />
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Toaster theme="dark" position="top-right" />
       </body>
     </html>

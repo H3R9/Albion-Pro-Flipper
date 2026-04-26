@@ -1,17 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Loader2, Sparkles, Wallet, Pickaxe, MapPin, Search } from 'lucide-react';
+import { Loader2, Sparkles, Wallet, Pickaxe, MapPin, Search, Save, FileText } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { cn } from '@/lib/utils';
 import { TradeResult } from '@/lib/albion/analysis';
 import { formatSilver, ROYAL_CITIES } from '@/lib/albion/utils';
 import { getItemFullName } from '@/lib/albion/items';
 import { MarkdownMessage } from './MarkdownMessage';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { toast } from 'sonner';
 
 interface InventoryPlannerProps {
   results: TradeResult[];
+  settings: { maxAge: number, minProfit: number, minMargin: number };
 }
 
-export function InventoryPlanner({ results }: InventoryPlannerProps) {
+export function InventoryPlanner({ results, settings }: InventoryPlannerProps) {
+  const { user, profile, updateProfile } = useAuth();
   const [silver, setSilver] = useState<number>(0);
   const [cities, setCities] = useState<string[]>(ROYAL_CITIES);
   
@@ -20,7 +26,18 @@ export function InventoryPlanner({ results }: InventoryPlannerProps) {
 
   const [messages, setMessages] = useState<{ role: 'model' | 'user'; text: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingReport, setIsSavingReport] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Sync state with user profile initially
+  useEffect(() => {
+    if (profile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSilver(profile.silver || 0);
+      setInventory(profile.inventory || {});
+    }
+  }, [profile]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,6 +54,50 @@ export function InventoryPlanner({ results }: InventoryPlannerProps) {
       [`${tier}_${enchant}`]: num
     }));
   };
+
+  const saveProfileData = async () => {
+    if (!user) {
+       toast.error("Faça login para salvar seu perfil.");
+       return;
+    }
+    setIsSavingProfile(true);
+    try {
+      await updateProfile({ silver, inventory });
+      toast.success("Perfil atualizado e salvo.");
+    } catch (e) {
+      toast.error("Erro ao salvar perfil.");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  }
+
+  const saveReport = async () => {
+    if (!user) {
+      toast.error("Faça login para salvar relatórios.");
+      return;
+    }
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.role !== 'model') {
+      toast.error("Nenhum relatório gerado.");
+      return;
+    }
+
+    setIsSavingReport(true);
+    try {
+      await addDoc(collection(db, "reports"), {
+        userId: user.uid,
+        title: `Relatório de Planejamento - ${new Date().toLocaleDateString()}`,
+        content: lastMsg.text,
+        createdAt: serverTimestamp()
+      });
+      toast.success("Relatório salvo com sucesso!");
+    } catch (e) {
+       handleFirestoreError(e, OperationType.CREATE, "reports");
+       toast.error("Erro ao salvar o relatório.");
+    } finally {
+      setIsSavingReport(false);
+    }
+  }
 
   const getMatName = (enchant: number) => {
     if (enchant === 1) return 'Runas';
@@ -56,58 +117,88 @@ export function InventoryPlanner({ results }: InventoryPlannerProps) {
 
       const ai = new GoogleGenAI({ apiKey });
 
-      // Filtrar resultados apenas pelas cidades selecionadas e com lucro > 0
-      const validResults = results.filter(r => cities.includes(r.baseCity || r.sourceCity) && r.profit > 0);
+      // Obter resultados (permitindo lucro negativo se for encantamento, pois o jogador usa runas do inventário)
+      const validResults = results.filter(r => {
+         if (!cities.includes(r.baseCity || r.sourceCity)) return false;
+         
+         if (r.tradeType === 'enchant') {
+           // O jogador vai usar suas próprias runas. 
+           // Lucro líquido em relação ao custo base (excluindo o valor de mercado das runas)
+           const profitAssumingOwnRunes = r.sellPrice - (r.baseCost || 0) * 1.04;
+           return profitAssumingOwnRunes > 0;
+         }
+         return r.profit > 0;
+      });
       
       // Order by baseCost to give the AI smaller/different options, or just order by profit
-      const topResults = validResults.sort((a,b) => b.profit - a.profit).slice(0, 80);
-
+      const topResults = validResults.sort((a,b) => b.profit - a.profit).slice(0, 100);
       const dataContext = topResults.map(r => {
         const tierStr = r.baseId?.split('_')[0] || r.itemId.split('_')[0]; // ex: T4
         const methodStr = r.baseMethod === 'direct' ? 'Compra Direta' : 'Pedido de Compra (Buy Order)';
-        return `Oportunidade: Encantar ${getItemFullName(r.baseId || r.itemId)} para ${getItemFullName(r.itemId)}
+        const imageId = (r.baseId || r.itemId).split('@')[0];
+        
+        let profitDesc = `Lucro Líquido Estimado: ${formatSilver(r.profit)}`;
+        if (r.tradeType === 'enchant') {
+           const profitOwnRunes = r.sellPrice - (r.baseCost || 0) * 1.04; // Simplificado imposto + base
+           profitDesc = `Se ele COMPRAR materiais: ${formatSilver(r.profit)}. Se UTILIZAR materiais do inventário: ${formatSilver(profitOwnRunes)} de lucro!`;
+        }
+        
+        return `Oportunidade: Encantar ${r.baseId || r.itemId} para ${r.itemId}
 Tier do Item Flat: ${tierStr}
+ID da Imagem: ${imageId}
 Custo do Item Base Flat: ${formatSilver(r.baseCost || 0)} em ${r.baseCity} via ${methodStr} (Preço atualizado há ${r.cityAge} min)
-Materiais Necessários: ${r.runesRequired?.map(rune => `${rune.amount}x ${rune.tier} ${rune.type} (Custo estimado total: ${formatSilver(rune.price * rune.amount)})`).join(', ')}
+Materiais Necessários: ${r.runesRequired?.map(rune => `${rune.amount}x ${rune.tier} ${rune.type} (Custo de mercado: ${formatSilver(rune.price * rune.amount)})`).join(', ')}
 Venda no Black Market: ${formatSilver(r.sellPrice)} (Preço atualizado há ${r.bmAge} min)
 Volume de Venda BM (24h): ${r.volume24h || 0} unidades vendidas
-Lucro Líquido Estimado: ${formatSilver(r.profit)}`;
+${profitDesc}`;
       }).join('\n\n');
 
       const invContext = Object.entries(inventory)
-        .filter(([_, qty]) => qty > 0)
+        .filter(([, qty]) => qty > 0)
         .map(([key, qty]) => {
            const [tier, ench] = key.split('_');
            return `Tier ${tier} ${getMatName(parseInt(ench))}: ${qty} unidades`;
         }).join('\n');
 
-      const systemInstruction = `Você é um Estrategista Financeiro e Mestre Encantador em Albion Online.
-O jogador quer saber quais itens "flat" ele deve comprar nas cidades escolhidas (incluindo Caerleon, se o jogador quiser e os dados mostrarem) para encantar usando os recursos do inventário dele, e vendê-los no Black Market.
+      const systemInstruction = `Você é um Estrategista Financeiro Avançado e Mestre Encantador em Albion Online.
+Sua análise deve ser EXTREMAMENTE precisa, crítica e matemática. O jogador quer saber quais itens "flat" comprar nas cidades para encantar usando os recursos do inventário dele, e vendê-los no Black Market.
 
 DADOS DO JOGADOR:
 - Prata livre (apenas para comprar itens flats): ${formatSilver(silver)}
 - Inventário de Materiais:
 ${invContext || 'Nenhum material no inventário.'}
 
-DADOS DO MERCADO (TOP OPORTUNIDADES EM ORDEM DE POTENCIAL DE LUCRO ABSOLUTO):
+DADOS DO MERCADO (TOP OPORTUNIDADES EM TEMPO REAL):
 ${dataContext || 'Nenhuma oportunidade.'}
 
-REGRAS DE ANÁLISE E CÁLCULOS (MUITO IMPORTANTE):
-1. **Os materiais no inventário NÃO SÃO DE GRAÇA.** O jogador COMPROU esses materiais e eles têm um valor de mercado. O seu cálculo de Lucro Real DEVE subtrair o valor estimado dos materiais (indicado nas oportunidades) do valor de venda. Não diga que o lucro é maior só porque ele já tem o material no baú. Mantenha os cálculos da lista (Lucro Líquido Real = BM Venda - Flat - Custo Mercado Materiais).
-2. Dê ao jogador um plano de ação listando claramente os itens que ele deve comprar nas cidades com a prata livre que ele tem (respeitando o orçamento).
-3. Maximize o seu Custo-Benefício por recurso: Se um item der um pouco mais de lucro absoluto mas gastar 384 materiais (arma 2 mãos), e outro der um pouco menos de lucro absoluto mas usar apenas 96 (botas/elmos/capas), mostre o que for mais vantajoso em termos de Retorno sobre Investimento.
-4. Especifique EXATAMENTE o tipo de Runa em PT-BR (ex: "Use 288x Almas Tier 5 para encantar de .1 para .2", "Runas Tier 4", "Relíquias Tier 6", etc). Fale claramente a quantidade e o tier das runas usadas.
-5. Traduza perfeitamente e mostre o TIER (ex: "Tier 4 Espada Larga", "Tier 6 Capa da Morgana"). 
+AVISO IMPORTANTE: Se o jogador perguntar sobre itens específicos que não estão na lista, EXPLIQUE que o filtro atual dele de "Idade Máxima dos Dados" está configurado para ${settings.maxAge} minutos. Quando a API não tem atualizações recentes ou a margem é muito baixa, a oportunidade é omitida.
+
+REGRAS DE ANÁLISE E CÁLCULOS RIGOROSOS:
+1. **PRIORIDADE ABSOLUTA AO INVENTÁRIO (REGRA DE OURO):** Você DEVE priorizar ao MÁXIMO apontar as oportunidades (mesmo com lucros menores) que consumam os materiais exatos que o jogador já POSSUI NO INVENTÁRIO.
+2. **Quantidade Múltipla MÁXIMA:** NÃO recomende apenas 1 unidade, mas use um Teto de Segurança Severo: Nunca mande comprar mais de 25% do "Volume de Venda BM (24h)".
+3. **Perigo Real com Pedidos de Compra (Buy Orders):** NUNCA sugira "Pedido de Compra" para itens com Volume menor que 100.
+4. **Alerta de Volatilidade e Histórico (CRÍTICO):** A API pode ter picos de preço (outliers) artificiais. No final do seu relatório, DÊ UM ALERTA NEGRITO E DESTACADO: "Verifique o histórico de 4 semanas no jogo! Não invista sem antes conferir se o preço do Black Market se manteve estável nos últimos dias. Jamais compre às cegas apenas pelos dados deste relatório, valide in-game primeiro!"
+5. **Cálculo Correto e Taxa de Mercado:** O "Lucro Líquido Estimado" os impostos do Premium (4,5%). Avise brevemente: "O lucro projetado assume conta Com Premium (4,5% taxas BM). Para conta Sem Premium, reduza ~3% do valor bruto."
+6. **Valorize o Uso do Baú:** Escolha itens cujos requisitos se encaixam no inventário dele.
+7. **Tradução Oficial Albion PT-BR:** 
+   - CAPEITEM_KEEPER = Capa Protetora
+   - CAPEITEM_UNDEAD = Capa dos Mortos-Vivos
+   - CAPEITEM_DEMON = Capa Demoníaca
+   - CAPEITEM_MORGANA = Capa da Morgana
+   - CAPEITEM_FW_MARTLOCK = Capa de Martlock
+   - MACES = Maça, SWORDS = Espada, BROADSWORD = Espada Larga.
 
 DIRETRIZES EXATAS DE FORMATAÇÃO (Deixe os dados bem fáceis de ler):
-- Organize a lista de compras agrupando por Cidade.
-- Para cada item recomendado, use o formato OBRIGATÓRIO:
-  **[T<Tier>] <Nome em PT-BR>** (via <Compra Direta ou Pedido de Compra>)
-  - **Custo Flat:** <Valor> Prata (Há <X> min)
-  - **Venda BM:** <Valor> Prata (Há <X> min) | **Volume 24h:** <Z> vendidos
-  - **Materiais Necessários:** <Quantidade>x <Runa/Alma/Relíquia> Tier <Y>.
-  - **Lucro Líquido Real:** <Valor> Prata
-- Crie um "Resumo Financeiro da Operação" no final, mostrando apenas a matemática principal: Custo Total das Flats e o Lucro Líquido Real esperado.`;
+- Organize o plano de compras separando as cidades.
+- Para cada item sugerido, use EXATAMENTE a sintaxe para Imagens abaixo:
+  **![<NOME OFICIAL EM PT-BR>](https://render.albiononline.com/v1/item/<ID_DA_IMAGEM>.png?size=40) <QTD>x [T<Tier>] <NOME>** (via <Método de Compra>)
+  - **Custo Unitário Flat:** <Valor> Prata
+  - **Venda Unitária BM:** <Valor> Prata | **Volume 24h:** <Z> vendidos
+  - **Materiais para <QTD>:** <Quantidade Total>x <Runa/Alma/Relíquia> Tier <Y>
+  - **Lucro Líquido Estimado:** <Valor Unitário x Qtd> Prata
+
+Notas sobre a Imagem: Substitua <ID_DA_IMAGEM> pela "ID da Imagem" exata dos dados fornecidos (ex: T4_CAPEITEM_KEEPER).
+- Crie um "Resumo Financeiro da Operação" no final, focando nos materiais consumidos do próprio banco dele.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3.1-pro-preview",
@@ -142,6 +233,17 @@ DIRETRIZES EXATAS DE FORMATAÇÃO (Deixe os dados bem fáceis de ler):
             Informe quanto de prata livre você tem, e os materiais de encantamento no seu baú. 
             A IA combinará seu inventário com as últimas oportunidades de mercado para sugerir o **plano perfeito** de arbitragem e encantamento.
           </p>
+        </div>
+        <div className="flex shrink-0">
+          <button 
+             onClick={saveProfileData} 
+             disabled={isSavingProfile || !user}
+             className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold rounded-lg border border-slate-600 transition disabled:opacity-50"
+             title={!user ? "Faça login para salvar" : "Salvar Prata e Inventário no perfil"}
+          >
+             {isSavingProfile ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+             Salvar Inventário
+          </button>
         </div>
       </div>
 
@@ -238,11 +340,26 @@ DIRETRIZES EXATAS DE FORMATAÇÃO (Deixe os dados bem fáceis de ler):
                      <p className="max-w-xs">Preencha sua prata, seus materiais e clique em <strong>Gerar Plano Estratégico</strong> para receber a análise detalhada.</p>
                   </div>
                ) : (
-                  messages.map((msg, idx) => (
-                    <div key={idx} className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/50 shadow-sm relative">
-                       <MarkdownMessage content={msg.text} />
-                    </div>
-                  ))
+                  <div>
+                    {messages.map((msg, idx) => (
+                      <div key={idx} className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/50 shadow-sm relative mb-4">
+                         <MarkdownMessage content={msg.text} />
+                      </div>
+                    ))}
+                    
+                    {messages.length > 0 && messages[messages.length - 1].role === 'model' && (
+                      <div className="flex justify-end mt-4">
+                        <button 
+                          onClick={saveReport}
+                          disabled={isSavingReport || !user}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-500 text-white text-xs font-bold rounded-md border border-blue-500/50 transition disabled:opacity-50"
+                        >
+                          {isSavingReport ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+                          Salvar Relatório no Perfil
+                        </button>
+                      </div>
+                    )}
+                  </div>
                )}
                <div ref={messagesEndRef} />
             </div>

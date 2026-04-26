@@ -57,6 +57,7 @@ export interface TradeResult {
 
   originalOrderPrice?: number;
   setupFee?: number;
+  scenarios?: any[];
   
   trendData?: any;
 }
@@ -172,8 +173,11 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
       runePrices[mat.item_id] = { directPrice: Infinity, orderPrice: Infinity, directCity: '', orderCity: '', directDate: '', orderDate: '', directAge: Infinity, orderAge: Infinity };
     }
     
+    // Use 7 days max age for materials because prices are stable
+    const matMaxAge = 10080;
+
     const directAge = getAgeMinutes(mat.sell_price_min_date);
-    if (mat.sell_price_min > 0 && directAge <= maxAge) {
+    if (mat.sell_price_min > 0 && directAge <= matMaxAge) {
       if (mat.sell_price_min < runePrices[mat.item_id].directPrice) {
         runePrices[mat.item_id].directPrice = mat.sell_price_min;
         runePrices[mat.item_id].directCity = mat.city;
@@ -183,7 +187,7 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
     }
     
     const orderAge = getAgeMinutes(mat.buy_price_max_date);
-    if (mat.buy_price_max > 0 && orderAge <= maxAge) {
+    if (mat.buy_price_max > 0 && orderAge <= matMaxAge) {
       const price = mat.buy_price_max + 1;
       if (price < runePrices[mat.item_id].orderPrice) {
         runePrices[mat.item_id].orderPrice = price;
@@ -193,6 +197,11 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
       }
     }
   }
+
+  let filteredByProfit = 0;
+  let filteredByRune = 0;
+  let filteredByBaseCost = 0;
+  let filteredByMaxAge = 0;
 
   for (const [key, cities] of Object.entries(grouped)) {
     const lastUnderscore = key.lastIndexOf('_');
@@ -207,7 +216,10 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
     const bm = cities['Black Market'];
     if (!bm || !bm.buy_price_max || bm.buy_price_max <= 0) continue;
     const bmAge = getAgeMinutes(bm.buy_price_max_date);
-    if (bmAge > maxAge) continue;
+    if (bmAge > maxAge) {
+      filteredByMaxAge++;
+      continue;
+    }
 
     const sellPrice = bm.buy_price_max;
     const p = parseItemId(itemIdStr);
@@ -218,8 +230,9 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
 
     let bestScenario: any = null;
     let bestScenarioCost = Infinity;
+    const allScenarios: any[] = [];
 
-    for (let startLvl = 0; startLvl < enchantLevel; startLvl++) {
+    for (let startLvl = 0; startLvl <= enchantLevel; startLvl++) {
       const currentBaseId = startLvl === 0 ? baseItemName : `${baseItemName}@${startLvl}`;
       const baseKey = `${currentBaseId}_${quality}`;
       const baseCities = grouped[baseKey];
@@ -234,7 +247,7 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
 
       for (const [cityName, cityData] of Object.entries(baseCities)) {
         if (!ROYAL_CITIES.includes(cityName) && cityName !== 'Caerleon') continue;
-        if (filters.city !== 'all' && cityName !== filters.city) continue;
+        if (filters.city && filters.city !== 'all' && cityName !== filters.city) continue;
         
         if (cityData.sell_price_min > 0) {
           const age = getAgeMinutes(cityData.sell_price_min_date);
@@ -248,8 +261,9 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
         }
         
         if (cityData.buy_price_max > 0) {
-          // Ignorar se buy order for irrealista: menor que 100 pratas ou absurdo
-          const isUnrealistic = cityData.buy_price_max < 300 || (cityData.sell_price_min > 0 && cityData.buy_price_max < cityData.sell_price_min * 0.15);
+          // Ignorar buy orders irrealistas (menos de 40% do sell price) ou itens muito específicos como capas
+          const isFactionCape = currentBaseId.includes('CAPEITEM') && currentBaseId !== 'CAPEITEM'; // Qualquer capa q não seja a genérica
+          const isUnrealistic = cityData.buy_price_max < 300 || (cityData.sell_price_min > 0 && cityData.buy_price_max < cityData.sell_price_min * 0.40) || isFactionCape;
           if (!isUnrealistic) {
             const age = getAgeMinutes(cityData.buy_price_max_date);
             const boCost = cityData.buy_price_max + 1 + Math.floor((cityData.buy_price_max + 1) * 0.025);
@@ -317,37 +331,57 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
         });
       }
       
-      if (missingRune) continue;
+      if (missingRune) {
+        filteredByRune++;
+        continue;
+      }
 
       const totalCost = bestBaseCost + totalRuneCost + totalRuneSetupFee;
 
+      const scenario = {
+        id: String.fromCharCode(65 + startLvl),
+        startLvl,
+        currentBaseId,
+        bestBaseCost,
+        bestBaseCity,
+        bestBaseMethod,
+        bestBaseAge,
+        bestBaseDateStr,
+        totalRuneCost,
+        totalRuneSetupFee,
+        runesRequired,
+        runeMethod: (hasDirectRune && hasOrderRune) ? 'mixed' : (hasDirectRune ? 'direct' : (runesRequired.length ? 'buyorder' : 'none')),
+        totalCost
+      };
+
+      allScenarios.push(scenario);
+
       if (totalCost < bestScenarioCost) {
         bestScenarioCost = totalCost;
-        bestScenario = {
-          id: String.fromCharCode(65 + startLvl),
-          startLvl,
-          currentBaseId,
-          bestBaseCost,
-          bestBaseCity,
-          bestBaseMethod,
-          bestBaseAge,
-          bestBaseDateStr,
-          totalRuneCost,
-          totalRuneSetupFee,
-          runesRequired,
-          runeMethod: (hasDirectRune && hasOrderRune) ? 'mixed' : (hasDirectRune ? 'direct' : 'buyorder')
-        };
+        bestScenario = scenario;
       }
     }
 
+    if (allScenarios.length === 0) {
+      filteredByBaseCost++;
+    }
+    
     if (!bestScenario) continue;
-    if (sellPrice <= bestScenarioCost) continue;
+
+    // Remove strict profitability filter allowing slightly lossy scenarios
+    // so the InventoryPlanner can evaluate using the player's stock.
+    // Extremely negative flips (losses > 80% of flat cost) are ignored.
+    if (sellPrice <= bestScenario.bestBaseCost * 0.2) {
+      filteredByProfit++;
+      continue;
+    }
 
     const bmTax = Math.floor(sellPrice * 0.04);
     const profit = sellPrice - bestScenarioCost - bmTax;
     
-    if (profit < (settings.minProfit || 0)) continue;
-    
+    // Completely drop the settings.minProfit strict check here.
+    // Allow everything to be scored.
+
     const worstAge = Math.max(bestScenario.bestBaseAge, bmAge);
     const freshness = freshnessScore(worstAge);
     const score = profit * freshness;
@@ -385,6 +419,41 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
       adjustedProfit,
       routeZone: route.zone,
       scenarioUsed: bestScenario.id,
+      scenarios: allScenarios,
+    } as any);
+  }
+
+  if (results.length === 0) {
+    results.push({
+      itemId: 'DEBUG_INFO',
+      quality: 1,
+      baseId: `BM:${Object.keys(grouped).length} / MaxAge:${filteredByMaxAge} / BaseCost:${filteredByBaseCost} / Runes:${filteredByRune} / Profit:${filteredByProfit}`,
+      runesRequired: [],
+      baseCity: 'Debug',
+      baseCost: 0,
+      baseMethod: 'direct',
+      baseDateStr: '',
+      buyPrice: 0, 
+      sourceCity: 'Multi Cidades', 
+      destCity: 'Black Market',
+      sellPrice: 0,
+      profit: 0,
+      margin: 0,
+      tax: 0, 
+      cityAge: 0,
+      bmAge: 0,
+      worstAge: 0,
+      freshness: 0,
+      score: Infinity,
+      tradeType: 'enchant',
+      buyDate: new Date().toISOString(), 
+      sellDate: new Date().toISOString(),
+      runeMethod: 'none',
+      riskCost: 0,
+      adjustedProfit: 0,
+      routeZone: 'Safe',
+      scenarioUsed: 'A',
+      scenarios: [],
     } as any);
   }
 
@@ -421,7 +490,8 @@ export function analyzeBuyOrderTrades(data: MarketData[], settings: any, filters
 
       if (!cityData.buy_price_max || cityData.buy_price_max <= 0) continue;
       
-      const isUnrealistic = cityData.buy_price_max < 300 || (cityData.sell_price_min > 0 && cityData.buy_price_max < cityData.sell_price_min * 0.15);
+      const isFactionCape = cityData.item_id.includes('CAPEITEM') && !cityData.item_id.startsWith('T') && cityData.item_id !== 'CAPEITEM'; 
+      const isUnrealistic = cityData.buy_price_max < 300 || (cityData.sell_price_min > 0 && cityData.buy_price_max < cityData.sell_price_min * 0.40) || (cityData.item_id.includes('CAPEITEM') && cityData.item_id !== 'CAPEITEM');
       if (isUnrealistic) continue;
 
       const orderPrice = cityData.buy_price_max + 1;

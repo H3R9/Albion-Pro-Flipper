@@ -40,13 +40,15 @@ export function MaterialsAiChat({ materialsData }: MaterialsAiChatProps) {
       // Create a context summary from the data
       const dataContext = materialsData.map(m => {
         return `Item: ${m.name} (ID: ${m.itemId}, Tier: ${m.tier})
-Melhor Venda Direta: ${m.bestDirectPrice < Infinity ? `${formatSilver(m.bestDirectPrice)} em ${m.bestDirectCity}` : 'Indisponível'}
-Melhor Pedido de Compra: ${m.bestOrderPrice < Infinity ? `${formatSilver(m.bestOrderPrice)} em ${m.bestOrderCity}` : 'Indisponível'}
+Melhor Venda Direta Origin: ${m.bestDirectPrice < Infinity ? `${formatSilver(m.bestDirectPrice)} em ${m.bestDirectCity}` : 'Indisponível'}
+Melhor Pedido de Compra Origin: ${m.bestOrderPrice < Infinity ? `${formatSilver(m.bestOrderPrice)} em ${m.bestOrderCity}` : 'Indisponível'}
+Venda Direta Caerleon: ${m.caerleonSellPrice && m.caerleonSellPrice < Infinity ? formatSilver(m.caerleonSellPrice) : 'Indisponível'}
+Pedido de Compra Caerleon: ${m.caerleonBuyOrder && m.caerleonBuyOrder > 0 ? formatSilver(m.caerleonBuyOrder) : 'Indisponível'}
 `;
       }).join('\n');
 
-      const systemInstruction = `Você é um analista de mercado do Albion Online focado em Runas, Almas e Relíquias.
-Sua função é aconselhar o jogador sobre as melhores cidades para colocar pedidos de compra ou fazer vendas diretas com base nos Fatos Atualizados Fornecidos.
+      const systemInstruction = `Você é um analista experiente de arbitragem e flip do Albion Online, especialista no Mercado Negro e no mercado de Caerleon.
+Sua função é aconselhar o jogador sobre as melhores cidades para comprar materiais de encantamento (Runas, Almas e Relíquias) nas Royal Cities e lucrar vendendo-os no mercado de Caerleon. Responda a perguntas como: "quais itens mais saem", "quais geram mais margem" e "melhor oportunidade de investimento a longo prazo".
 
 DIRETRIZES DE FORMATAÇÃO:
 - Estruture a resposta com cabeçalhos (\`###\`) e tópicos claros.

@@ -9,9 +9,10 @@ import { MarkdownMessage } from './MarkdownMessage';
 
 interface EnchantAiChatProps {
   results: TradeResult[];
+  settings: { maxAge: number, minProfit: number, minMargin: number };
 }
 
-export function EnchantAiChat({ results }: EnchantAiChatProps) {
+export function EnchantAiChat({ results, settings }: EnchantAiChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: 'model' | 'user'; text: string }[]>([]);
   const [input, setInput] = useState('');
@@ -49,6 +50,8 @@ Lucro Estimado: ${formatSilver(r.profit)} (${r.margin}%)
       }).join('\n');
 
       const systemInstruction = `Você é um estrategista do Mercado Negro (Black Market) de Albion Online. O jogador quer saber quais itens "flat" (.0) ou pouco encantados ele deve armar pedidos de compra agora (durante a madrugada).
+
+AVISO IMPORTANTE SOBRE DADOS FALTANTES: Se o usuário notar a falta de certos itens do seu interesse (como Capotes Reais, Armaduras Reais, Brumário/Mistcaller, ou outros Off-hands), EXPLIQUE a ele que as configurações de Filtro dele estão as seguintes: "Idade Máxima dos Dados: ${settings.maxAge} min" e "Margem Mínima: ${settings.minMargin}%". Se a API do Albion Data Project não tiver reportado atualizações para esses itens nas últimas \`${settings.maxAge}\` horas, ou se a margem for muito baixa, eles ficaram de fora da tabela da interface. Explique que o jogador deve aumentar o maxAge (Tempo) na interface do usuário para aparecerem mais itens "antigos" (menos transacionados).
 
 DIRETRIZES DE FORMATAÇÃO:
 - Separe sua reposta em tópicos e seções curtas (ex: use **Oportunidade 1:**).

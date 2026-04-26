@@ -9,6 +9,7 @@ import {
   calculateTax,
   formatSilver,
   getAgeMinutes,
+  calculateMargin,
 } from '@/lib/albion/utils';
 import { getItemFullName } from '@/lib/albion/items';
 import { TradeResult } from '@/lib/albion/analysis';
@@ -269,7 +270,7 @@ export function TradeCard({ result, index }: { result: TradeResult; index: numbe
           <div className="flex flex-col lg:items-end">
              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Lucro Líquido Estimado</span>
              <span className={cn("font-black text-xl lg:text-2xl leading-none drop-shadow-md", displayProfit >= 0 ? "text-green-400" : "text-red-400")}>
-               +{formatProfit(Math.floor(displayProfit))}
+               {displayProfit >= 0 ? '+' : ''}{formatProfit(Math.floor(displayProfit))}
              </span>
           </div>
           <div className={cn("font-mono text-xs font-bold bg-slate-900 px-2 py-1 rounded shadow-inner mt-2", result.margin >= 30 ? "text-emerald-400 border border-emerald-500/20" : "text-slate-300 border border-slate-700")}>
@@ -307,6 +308,35 @@ export function TradeCard({ result, index }: { result: TradeResult; index: numbe
               </div>
               <div className="bg-slate-900/30 p-2 sm:p-4 rounded-xl border border-slate-800/60">
                  {renderSteps()}
+                 
+                 {result.scenarios && result.scenarios.length > 1 && (
+                   <div className="mt-4 pt-4 border-t border-slate-800/60">
+                     <h5 className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-bold">Alternativas Encontradas:</h5>
+                     <div className="space-y-2">
+                       {result.scenarios.filter((s: any) => s.id !== result.scenarioUsed).map((s: any, idx: number) => {
+                         const sBaseName = getItemFullName(s.currentBaseId);
+                         const sProfit = result.sellPrice - s.totalCost - result.tax;
+                         const sMargin = calculateMargin(s.totalCost, sProfit);
+                         const isNative = s.runesRequired.length === 0;
+                         return (
+                           <div key={idx} className="flex flex-col sm:flex-row justify-between bg-slate-950/50 p-2 rounded border border-slate-800/50 text-[11px]">
+                             <div className="flex flex-col gap-1">
+                               <strong className="text-slate-300">{isNative ? 'Comprar item já pronto' : `Comprar ${sBaseName} + Runas`}</strong>
+                               <span className="text-slate-500">
+                                 Custo total: <span className="text-red-400 font-mono">{formatSilver(s.totalCost)}</span>
+                               </span>
+                             </div>
+                             <div className="flex flex-col items-end gap-1 mt-2 sm:mt-0">
+                               <span className={cn("font-bold", sProfit > 0 ? "text-green-400" : "text-red-400")}>Lucro: {sProfit > 0 ? '+' : ''}{formatSilver(sProfit)}</span>
+                               <span className="text-slate-500 font-mono">MG: {sMargin.toFixed(1)}%</span>
+                             </div>
+                           </div>
+                         );
+                       })}
+                     </div>
+                   </div>
+                 )}
+
                  <div className="mt-6 p-4 bg-gradient-to-r from-amber-500/10 to-transparent border-l-4 border-amber-500 rounded-r-lg flex flex-col sm:flex-row justify-between items-center gap-4">
                    <div className="flex items-center gap-3">
                      <div className="bg-amber-500/20 p-2 rounded-full"><Calculator className="text-amber-500" size={20} /></div>
@@ -316,7 +346,9 @@ export function TradeCard({ result, index }: { result: TradeResult; index: numbe
                      </div>
                    </div>
                    <div className="text-right">
-                     <div className="text-2xl font-black text-amber-400 drop-shadow-md">+{formatSilver(Math.floor(displayProfit))}</div>
+                     <div className={cn("text-2xl font-black drop-shadow-md", displayProfit >= 0 ? "text-amber-400" : "text-red-400")}>
+                       {displayProfit >= 0 ? '+' : ''}{formatSilver(Math.floor(displayProfit))}
+                     </div>
                      <div className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 inline-block mt-1">Margem Real: {result.margin.toFixed(1)}%</div>
                    </div>
                  </div>

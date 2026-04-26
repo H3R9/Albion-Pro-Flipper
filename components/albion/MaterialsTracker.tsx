@@ -28,6 +28,9 @@ export interface MaterialData {
   bestOrderCity: string;
   bestOrderDate?: string;
 
+  caerleonSellPrice?: number;
+  caerleonBuyOrder?: number;
+
   trend?: 'up' | 'down' | 'stable';
   changePercent?: number;
 }
@@ -91,6 +94,9 @@ export function MaterialsTracker() {
         // We calculate best order price adding +1 to max buy order
         const bestOrderEntry = validOrders.length > 0 ? validOrders[0] : null;
 
+        const caerleonSell = itemEntries.find(e => e.city === 'Caerleon' && e.sell_price_min > 0 && getAgeMinutes(e.sell_price_min_date) <= 360);
+        const caerleonBuy = itemEntries.find(e => e.city === 'Caerleon' && e.buy_price_max > 0 && getAgeMinutes(e.buy_price_max_date) <= 360);
+
         const tierMatch = itemId.match(/^T(\d+)/);
         const tier = tierMatch ? parseInt(tierMatch[1], 10) : 0;
 
@@ -107,6 +113,9 @@ export function MaterialsTracker() {
           bestOrderPrice: bestOrderEntry ? bestOrderEntry.buy_price_max + 1 : Infinity,
           bestOrderCity: bestOrderEntry ? bestOrderEntry.city : 'N/A',
           bestOrderDate: bestOrderEntry ? bestOrderEntry.buy_price_max_date : undefined,
+          
+          caerleonSellPrice: caerleonSell ? caerleonSell.sell_price_min - 1 : Infinity,
+          caerleonBuyOrder: caerleonBuy ? caerleonBuy.buy_price_max : 0,
         });
       }
 
@@ -274,8 +283,9 @@ export function MaterialsTracker() {
                     <thead className="bg-[#0b0c10]/80 text-slate-300 border-b border-slate-700 font-bold text-xs uppercase tracking-wider">
                       <tr>
                         <th className="p-4 pl-6">Material</th>
-                        <th className="p-4 text-right">Melhor Compra Direta</th>
-                        <th className="p-4 text-right">Melhor Pedido de Compra</th>
+                        <th className="p-4 text-right">Compra Origin (Multi)</th>
+                        <th className="p-4 text-right">Vender em Caerleon</th>
+                        <th className="p-4 text-center">Lucro Estimado</th>
                         <th className="p-4 text-center">Tendência (Global)</th>
                       </tr>
                     </thead>
@@ -292,35 +302,67 @@ export function MaterialsTracker() {
                             </td>
                             
                             <td className="p-4 text-right">
-                              {hasDirect ? (
-                                <div className="flex flex-col items-end gap-1.5">
-                                  <div className="flex items-center gap-2 text-slate-100 font-mono text-base bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
-                                    <span className="text-slate-400 text-xs font-sans tracking-wide uppercase">{item.bestDirectCity}</span>
-                                    <span className="font-black text-amber-400 drop-shadow-sm">{formatSilver(item.bestDirectPrice)}</span>
-                                  </div>
-                                  <div className="text-[10px] text-slate-400 flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded font-medium">
-                                    COMPRA DIRETA • <LiveTimeAgo dateStr={item.bestDirectDate || null} />
-                                  </div>
-                                </div>
-                              ) : (
-                                <span className="text-slate-500 text-sm italic">Indisponível</span>
-                              )}
-                            </td>
-                            
-                            <td className="p-4 text-right">
                               {hasOrder ? (
                                 <div className="flex flex-col items-end gap-1.5">
                                   <div className="flex items-center gap-2 text-slate-100 font-mono text-base bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
-                                    <span className="text-slate-400 text-xs font-sans tracking-wide uppercase">{item.bestOrderCity}</span>
+                                    <span className="text-blue-300 text-[10px] font-sans tracking-wide uppercase">PEDIDO ({item.bestOrderCity})</span>
                                     <span className="font-black text-blue-400 drop-shadow-sm">{formatSilver(item.bestOrderPrice)}</span>
                                   </div>
-                                  <div className="text-[10px] text-slate-400 flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded font-medium">
-                                    PEDIDO DE COMPRA • <LiveTimeAgo dateStr={item.bestOrderDate || null} />
+                                </div>
+                              ) : null}
+                              {hasDirect ? (
+                                <div className="flex flex-col items-end gap-1.5 mt-1">
+                                  <div className="flex items-center gap-2 text-slate-100 font-mono text-base bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
+                                    <span className="text-amber-500 text-[10px] font-sans tracking-wide uppercase">DIRETA ({item.bestDirectCity})</span>
+                                    <span className="font-black text-amber-400 drop-shadow-sm">{formatSilver(item.bestDirectPrice)}</span>
                                   </div>
                                 </div>
-                              ) : (
-                                <span className="text-slate-500 text-sm italic">Sem ordens realísticas</span>
+                              ) : null}
+                              {!hasDirect && !hasOrder && <span className="text-slate-500 text-sm italic">Indisponível</span>}
+                            </td>
+                            
+                            <td className="p-4 text-right">
+                              {item.caerleonSellPrice && item.caerleonSellPrice < Infinity ? (
+                                <div className="flex flex-col items-end gap-1.5">
+                                  <div className="flex items-center gap-2 text-slate-100 font-mono text-base bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
+                                    <span className="text-emerald-400 text-[10px] font-sans tracking-wide uppercase">VENDA DIRETA</span>
+                                    <span className="font-black text-emerald-400 drop-shadow-sm">{formatSilver(item.caerleonSellPrice)}</span>
+                                  </div>
+                                </div>
+                              ) : null}
+                              {item.caerleonBuyOrder && item.caerleonBuyOrder > 0 ? (
+                                <div className="flex flex-col items-end gap-1.5 mt-1">
+                                  <div className="flex items-center gap-2 text-slate-100 font-mono text-base bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
+                                    <span className="text-blue-300 text-[10px] font-sans tracking-wide uppercase">PARA PEDIDO BM</span>
+                                    <span className="font-black text-blue-400 drop-shadow-sm">{formatSilver(item.caerleonBuyOrder)}</span>
+                                  </div>
+                                </div>
+                              ) : null}
+                              {(!item.caerleonSellPrice || item.caerleonSellPrice === Infinity) && (!item.caerleonBuyOrder || item.caerleonBuyOrder === 0) && (
+                                <span className="text-slate-500 text-sm italic">Indisponível</span>
                               )}
+                            </td>
+
+                            <td className="p-4 text-center">
+                              {(() => {
+                                const bestBuy = Math.min(item.bestDirectPrice, item.bestOrderPrice);
+                                const bestSell = Math.max(item.caerleonSellPrice !== Infinity ? item.caerleonSellPrice! : 0, item.caerleonBuyOrder || 0);
+
+                                if (bestBuy === Infinity || bestSell === 0) return <span className="text-slate-500">-</span>;
+                                
+                                const valTax = Math.floor(bestSell * 0.04);
+                                const profit = bestSell - bestBuy - valTax;
+                                const margin = (profit / bestBuy) * 100;
+                                
+                                return (
+                                  <div className="flex flex-col items-center">
+                                    <span className={cn("font-bold font-mono text-base", profit > 0 ? "text-green-400" : "text-red-400")}>
+                                      {profit > 0 ? '+' : ''}{formatSilver(profit)}
+                                    </span>
+                                    <span className="text-xs text-slate-400">{margin.toFixed(1)}%</span>
+                                  </div>
+                                );
+                              })()}
                             </td>
 
                             <td className="p-4 text-center">
