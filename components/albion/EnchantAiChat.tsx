@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Loader2, Send, Bot, User, Sparkles, MessageSquareText } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { cn } from '@/lib/utils';
-import { TradeResult } from '@/lib/albion/analysis';
+import { TradeResult } from '@/lib/albion/types';
 import { formatSilver } from '@/lib/albion/utils';
 import { getItemFullName } from '@/lib/albion/items';
 import { MarkdownMessage } from './MarkdownMessage';
@@ -43,7 +43,7 @@ export function EnchantAiChat({ results, settings }: EnchantAiChatProps) {
       const dataContext = results.slice(0, 50).map(r => {
         return `Oportunidade: Encantar ${getItemFullName(r.baseId || r.itemId)} para ${getItemFullName(r.itemId)} (Qualidade ${r.quality})
 Item Base/Flat a comprar: ${r.baseMethod} em ${r.baseCity} por ${formatSilver(r.baseCost || 0)}
-Materiais: ${r.runesRequired?.map(rune => `Comprar ${rune.amount}x ${rune.tier} ${rune.type} por ${formatSilver(rune.price)} (${rune.method} em ${rune.city})`).join(', ')}
+Materiais: ${r.runesRequired?.map(rune => `Comprar ${rune.amount}x ${getItemFullName(rune.id)} por ${formatSilver(rune.price)} (${rune.method} em ${rune.city})`).join(', ')}
 Venda no Black Market: ${formatSilver(r.sellPrice)}
 Lucro Estimado: ${formatSilver(r.profit)} (${r.margin}%)
 `;

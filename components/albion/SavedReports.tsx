@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { MarkdownMessage } from './MarkdownMessage';
-import { Loader2, FileText, Calendar } from 'lucide-react';
+import { Loader2, FileText, Calendar, Trash2 } from 'lucide-react';
 
 interface SavedReport {
   id: string;
@@ -17,6 +17,31 @@ export function SavedReports() {
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedReport, setSelectedReport] = useState<SavedReport | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const handleDelete = async (reportId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (confirmDeleteId !== reportId) {
+      setConfirmDeleteId(reportId);
+      return;
+    }
+    
+    setConfirmDeleteId(null);
+    setDeletingId(reportId);
+    try {
+      await deleteDoc(doc(db, "reports", reportId));
+      setReports(prev => prev.filter(r => r.id !== reportId));
+      if (selectedReport?.id === reportId) {
+        setSelectedReport(null);
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `reports/${reportId}`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   useEffect(() => {
     async function loadReports() {
@@ -80,17 +105,32 @@ export function SavedReports() {
              <p className="text-sm text-slate-500 p-4 text-center">Nenhum relatório salvo.</p>
            ) : (
              reports.map(report => (
-               <button
-                 key={report.id}
-                 onClick={() => setSelectedReport(report)}
-                 className={`w-full text-left p-3 rounded-lg mb-2 transition-colors ${selectedReport?.id === report.id ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-slate-300 hover:bg-slate-800 border border-transparent'}`}
-               >
-                 <div className="font-bold text-sm truncate">{report.title}</div>
-                 <div className="text-xs opacity-60 mt-1 flex items-center gap-1">
-                    <Calendar size={12} />
-                    {report.createdAt.toLocaleString('pt-BR')}
-                 </div>
-               </button>
+               <div key={report.id} className="relative group">
+                 <button
+                   onClick={() => setSelectedReport(report)}
+                   className={`w-full text-left p-3 rounded-lg mb-2 transition-colors border ${selectedReport?.id === report.id ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'text-slate-300 hover:bg-slate-800 border-transparent'}`}
+                 >
+                   <div className="font-bold text-sm truncate pr-8">{report.title}</div>
+                   <div className="text-xs opacity-60 mt-1 flex items-center gap-1">
+                      <Calendar size={12} />
+                      {report.createdAt.toLocaleString('pt-BR')}
+                   </div>
+                 </button>
+                 <button
+                   onClick={(e) => handleDelete(report.id, e)}
+                   className={`absolute top-3 right-3 transition-opacity p-1 rounded ${confirmDeleteId === report.id ? 'opacity-100 text-white bg-red-600 hover:bg-red-700 font-bold text-xs px-2 py-1' : 'opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400'}`}
+                   title={confirmDeleteId === report.id ? "Clique novamente para confirmar" : "Excluir relatório"}
+                   disabled={deletingId === report.id}
+                 >
+                   {deletingId === report.id ? (
+                     <Loader2 size={16} className="animate-spin text-white" />
+                   ) : confirmDeleteId === report.id ? (
+                     "Confirmar"
+                   ) : (
+                     <Trash2 size={16} />
+                   )}
+                 </button>
+               </div>
              ))
            )}
         </div>

@@ -9,6 +9,7 @@ import { requestNotificationPermission, sendNotification } from '@/lib/alerts';
 import { LiveTimeAgo } from '@/components/albion/LiveTimeAgo';
 
 import { MaterialsAiChat } from './MaterialsAiChat';
+import { toast } from 'sonner';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -48,7 +49,7 @@ export function MaterialsTracker() {
         setAlertsEnabled(true);
         sendNotification('Monitoramento de Materiais Ativado', { body: 'Você receberá alertas quando o preço dos itens de melhor compra cair significativamente.' });
       } else {
-        alert('Permissão de notificação negada ou não suportada.');
+        toast.warning('Permissão de notificação negada ou não suportada.');
       }
     } else {
       setAlertsEnabled(false);

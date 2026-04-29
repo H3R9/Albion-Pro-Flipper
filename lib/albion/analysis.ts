@@ -8,59 +8,14 @@ import {
   ROUTE_INFO,
 } from './utils';
 
-export interface MarketData {
-  item_id: string;
-  city: string;
-  quality: number;
-  sell_price_min: number;
-  sell_price_min_date: string;
-  sell_price_max: number;
-  sell_price_max_date: string;
-  buy_price_min: number;
-  buy_price_min_date: string;
-  buy_price_max: number;
-  buy_price_max_date: string;
-}
-
-export interface TradeResult {
-  itemId: string;
-  quality: number;
-  sourceCity: string;
-  destCity: string;
-  buyPrice: number;
-  sellPrice: number;
-  profit: number;
-  margin: number;
-  tax: number;
-  cityAge: number;
-  bmAge: number;
-  worstAge: number;
-  freshness: number;
-  score: number;
-  tradeType: string;
-  buyDate: string;
-  sellDate: string;
-  riskCost: number;
-  adjustedProfit: number;
-  routeZone: string;
-  volume24h?: number;
-
-  baseId?: string;
-  runesRequired?: any[];
-  baseCity?: string;
-  baseCost?: number;
-  baseMethod?: string;
-  baseDateStr?: string;
-  runeMethod?: string;
-  scenarioUsed?: string;
-  quantity?: number;
-
-  originalOrderPrice?: number;
-  setupFee?: number;
-  scenarios?: any[];
-  
-  trendData?: any;
-}
+import {
+  ScanSettings,
+  ScanFilters,
+  MarketData,
+  TradeResult,
+  EnchantScenario,
+  EnchantMaterial
+} from './types';
 
 function groupByItemQuality(data: MarketData[]) {
   const grouped: Record<string, Record<string, MarketData>> = {};
@@ -81,7 +36,7 @@ function freshnessScore(ageMinutes: number) {
   return 0.1;
 }
 
-function analyzeVsBM(data: MarketData[], settings: any, filters: any, allowedCities: string[]): TradeResult[] {
+function analyzeVsBM(data: MarketData[], settings: ScanSettings, filters: ScanFilters, allowedCities: string[]): TradeResult[] {
   const grouped = groupByItemQuality(data);
   const results: TradeResult[] = [];
   const maxAge = settings.maxAge || 120;
@@ -154,15 +109,15 @@ function analyzeVsBM(data: MarketData[], settings: any, filters: any, allowedCit
   return results.sort((a, b) => b.score - a.score);
 }
 
-export function analyzeBlackTrades(data: MarketData[], settings: any, filters: any) {
+export function analyzeBlackTrades(data: MarketData[], settings: ScanSettings, filters: ScanFilters) {
   return analyzeVsBM(data, settings, filters, ['Caerleon']);
 }
 
-export function analyzeRoyalBM(data: MarketData[], settings: any, filters: any) {
+export function analyzeRoyalBM(data: MarketData[], settings: ScanSettings, filters: ScanFilters) {
   return analyzeVsBM(data, settings, filters, ROYAL_CITIES);
 }
 
-export function analyzeEnchanting(data: MarketData[], settings: any, filters: any, globalEnchantMaterials: MarketData[]) {
+export function analyzeEnchanting(data: MarketData[], settings: ScanSettings, filters: ScanFilters, globalEnchantMaterials: MarketData[]) {
   const grouped = groupByItemQuality(data);
   const results: TradeResult[] = [];
   const maxAge = settings.maxAge || 120;
@@ -228,9 +183,9 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
     const baseItemName = itemIdStr.replace(/@\d+$/, '');
     const quality = cities[Object.keys(cities)[0]]?.quality || 1;
 
-    let bestScenario: any = null;
+    let bestScenario: EnchantScenario | null = null;
     let bestScenarioCost = Infinity;
-    const allScenarios: any[] = [];
+    const allScenarios: EnchantScenario[] = [];
 
     for (let startLvl = 0; startLvl <= enchantLevel; startLvl++) {
       const currentBaseId = startLvl === 0 ? baseItemName : `${baseItemName}@${startLvl}`;
@@ -240,8 +195,8 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
       if (!baseCities) continue;
 
       let bestBaseCost = Infinity;
-      let bestBaseCity = null;
-      let bestBaseMethod = null; 
+      let bestBaseCity: string | null = null;
+      let bestBaseMethod: string | null = null;
       let bestBaseAge = 0;
       let bestBaseDateStr = '';
 
@@ -320,7 +275,7 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
           level: i,
           price: directTotalCost <= orderTotalCost ? rData.directPrice : rData.orderPrice,
           city: directTotalCost <= orderTotalCost ? rData.directCity : rData.orderCity,
-          method: directTotalCost <= orderTotalCost ? 'direct' : 'buyorder',
+          method: (directTotalCost <= orderTotalCost ? 'direct' : 'buyorder') as 'direct' | 'buyorder',
           dateStr: directTotalCost <= orderTotalCost ? rData.directDate : rData.orderDate,
           directPrice: rData.directPrice,
           directCity: rData.directCity,
@@ -350,7 +305,7 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
         totalRuneCost,
         totalRuneSetupFee,
         runesRequired,
-        runeMethod: (hasDirectRune && hasOrderRune) ? 'mixed' : (hasDirectRune ? 'direct' : (runesRequired.length ? 'buyorder' : 'none')),
+        runeMethod: ((hasDirectRune && hasOrderRune) ? 'mixed' : (hasDirectRune ? 'direct' : (runesRequired.length ? 'buyorder' : 'none'))) as 'direct' | 'buyorder' | 'mixed' | 'none',
         totalCost
       };
 
@@ -386,7 +341,7 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
     const freshness = freshnessScore(worstAge);
     const score = profit * freshness;
 
-    const route = ROUTE_INFO[bestScenario.bestBaseCity] || ROUTE_INFO['Caerleon'];
+    const route = ROUTE_INFO[bestScenario.bestBaseCity || 'Caerleon'] || ROUTE_INFO['Caerleon'];
     const riskCost = Math.floor(bestScenarioCost * route.riskPct);
     const adjustedProfit = profit - riskCost;
 
@@ -420,7 +375,7 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
       routeZone: route.zone,
       scenarioUsed: bestScenario.id,
       scenarios: allScenarios,
-    } as any);
+    } satisfies TradeResult);
   }
 
   if (results.length === 0) {
@@ -454,7 +409,7 @@ export function analyzeEnchanting(data: MarketData[], settings: any, filters: an
       routeZone: 'Safe',
       scenarioUsed: 'A',
       scenarios: [],
-    } as any);
+    } satisfies TradeResult);
   }
 
   return results.sort((a, b) => b.score - a.score);
@@ -469,7 +424,7 @@ export function applyDemandScore(results: TradeResult[]) {
   return results.sort((a, b) => b.score - a.score);
 }
 
-export function analyzeBuyOrderTrades(data: MarketData[], settings: any, filters: any) {
+export function analyzeBuyOrderTrades(data: MarketData[], settings: ScanSettings, filters: ScanFilters) {
   const grouped = groupByItemQuality(data);
   const results: TradeResult[] = [];
   const maxAge = settings.maxAge || 120;

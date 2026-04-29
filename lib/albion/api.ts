@@ -1,4 +1,6 @@
 import { API_BASES } from './utils';
+import { getCached, setCached } from '../cache';
+import { sanitizeMarketData } from './sanitize';
 
 let currentServer: keyof typeof API_BASES = 'americas';
 
@@ -12,33 +14,68 @@ export function getApiBase() {
   return API_BASES[currentServer] || API_BASES.americas;
 }
 
-async function fetchWithRetry(url: string, retries = 3, delayMs = 1500): Promise<Response> {
+async function fetchWithRetry(url: string, retries = 3, delayMs = 1500, signal?: AbortSignal): Promise<Response> {
+  const maxDelay = 30000;
+  
   for (let i = 0; i <= retries; i++) {
     try {
-      const response = await fetch(url);
-      if (response.status === 429 && i < retries) {
-        const waitTime = delayMs * Math.pow(1.5, i);
-        console.warn(`[429] Rate limit atingido. Esperando ${Math.floor(waitTime)}ms...`);
+      if (signal?.aborted) throw new Error('Aborted');
+      
+      const response = await fetch(url, { signal });
+      
+      // No retry for 400, 401, 403, 404
+      if ([400, 401, 403, 404].includes(response.status)) {
+        return response;
+      }
+      
+      if (!response.ok && i < retries) {
+        // Handle Retry-After header if present
+        let waitTime = delayMs * Math.pow(2, i) + Math.random() * 1000;
+        const retryAfter = response.headers.get('Retry-After');
+        if (retryAfter) {
+          const parsed = parseInt(retryAfter, 10);
+          if (!isNaN(parsed)) waitTime = parsed * 1000;
+        }
+        waitTime = Math.min(waitTime, maxDelay);
+        
+        console.warn(`[${response.status}] Request failed. Retrying in ${Math.floor(waitTime)}ms... (Attempt ${i + 1}/${retries})`);
+        
         await new Promise((r) => setTimeout(r, waitTime));
         continue;
       }
       return response;
-    } catch (e) {
+    } catch (e: any) {
+      if (signal?.aborted) throw e;
       if (i === retries) throw e;
-      await new Promise((r) => setTimeout(r, delayMs));
+      
+      let waitTime = delayMs * Math.pow(2, i) + Math.random() * 1000;
+      waitTime = Math.min(waitTime, maxDelay);
+      console.warn(`[Network Error] Request failed: ${e.message}. Retrying in ${Math.floor(waitTime)}ms... (Attempt ${i + 1}/${retries})`);
+      await new Promise((r) => setTimeout(r, waitTime));
     }
   }
   throw new Error("Max retries exceeded");
 }
 
-export async function fetchMarketData(itemIds: string[], locations: string[], onProgress?: (c: number, t: number) => void) {
+export async function fetchMarketData(itemIds: string[], locations: string[], onProgress?: (c: number, t: number) => void, skipCache = false) {
   const base = getApiBase();
   const locsParam = locations.slice().sort().join(',');
 
   const results: any[] = [];
-  const idsToFetch = [...itemIds]; // Without caching layer for simplicity in this implementation
+  const idsToFetch: string[] = [];
+
+  for (const id of itemIds) {
+    const cacheKey = `market_${base}_${id}_${locsParam}`;
+    const cachedData = skipCache ? null : getCached<any[]>(cacheKey);
+    if (cachedData) {
+      results.push(...cachedData);
+    } else {
+      idsToFetch.push(id);
+    }
+  }
 
   if (idsToFetch.length === 0) {
+    if (onProgress) onProgress(1, 1);
     return results;
   }
 
@@ -67,8 +104,26 @@ export async function fetchMarketData(itemIds: string[], locations: string[], on
     try {
       const response = await fetchWithRetry(url, 3, 2000);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
+      const rawData = await response.json();
+      const data = sanitizeMarketData(rawData);
       results.push(...data);
+      
+      const dataByItem = new Map<string, any[]>();
+      for (const entry of data) {
+        if (!dataByItem.has(entry.item_id)) dataByItem.set(entry.item_id, []);
+        dataByItem.get(entry.item_id)!.push(entry);
+      }
+      for (const [id, itemData] of dataByItem.entries()) {
+        const cacheKey = `market_${base}_${id}_${locsParam}`;
+        setCached(cacheKey, itemData, 2 * 60 * 1000); // 2 minutes
+      }
+      // Set empty arrays for missing items
+      for (const id of chunks[i]) {
+        if (!dataByItem.has(id)) {
+          const cacheKey = `market_${base}_${id}_${locsParam}`;
+          setCached(cacheKey, [], 2 * 60 * 1000); // 2 minutes
+        }
+      }
     } catch (e: any) {
       console.warn(`Erro no lote ${i + 1}:`, e.message);
     }
@@ -104,9 +159,20 @@ export async function fetchItemHistory(itemId: string) {
   }
 }
 
-export async function fetchBatchVolume(itemIds: string[]) {
+export async function fetchBatchVolume(itemIds: string[], skipCache = false) {
   const result = new Map<string, number>();
-  const toFetch = [...itemIds];
+  const toFetch: string[] = [];
+  const base = getApiBase().replace('/prices', '/history');
+
+  for (const id of itemIds) {
+    const cacheKey = `volume_${base}_${id}`;
+    const cachedVol = skipCache ? null : getCached<number>(cacheKey);
+    if (cachedVol !== null) {
+      result.set(id, cachedVol);
+    } else {
+      toFetch.push(id);
+    }
+  }
 
   if (toFetch.length === 0) return result;
 
@@ -115,8 +181,6 @@ export async function fetchBatchVolume(itemIds: string[]) {
   for (let i = 0; i < toFetch.length; i += chunkSize) {
     chunks.push(toFetch.slice(i, i + chunkSize));
   }
-
-  const base = getApiBase().replace('/prices', '/history');
 
   for (const chunk of chunks) {
     const idList = chunk.join(',');
@@ -136,6 +200,23 @@ export async function fetchBatchVolume(itemIds: string[]) {
             }
           }
           result.set(itemId, (result.get(itemId) || 0) + vol);
+        }
+        for (const [id, vol] of result.entries()) {
+          if (chunk.includes(id)) {
+            const cacheKey = `volume_${base}_${id}`;
+            setCached(cacheKey, vol, 10 * 60 * 1000); // 10 mins
+          }
+        }
+        for (const id of chunk) {
+          if (!result.has(id)) {
+            const cacheKey = `volume_${base}_${id}`;
+            setCached(cacheKey, 0, 10 * 60 * 1000);
+          }
+        }
+      } else {
+        for (const id of chunk) {
+          const cacheKey = `volume_${base}_${id}`;
+          setCached(cacheKey, 0, 10 * 60 * 1000);
         }
       }
     } catch (e) {

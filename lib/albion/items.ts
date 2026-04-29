@@ -137,6 +137,14 @@ export function getItemFullName(itemId: string): string {
 export function getItemsByCategory(categoryKey: string): string[] {
   const allIds = getAllItemIds();
   if (categoryKey === 'all') return allIds;
+
+  // Check if it's a parent category
+  if (PARENT_CATEGORIES[categoryKey]) {
+    const subCategories = PARENT_CATEGORIES[categoryKey];
+    return allIds.filter((id) => subCategories.includes(categorize(id)));
+  }
+
+  // Otherwise treat as a specific subcategory
   return allIds.filter((id) => categorize(id) === categoryKey);
 }
 

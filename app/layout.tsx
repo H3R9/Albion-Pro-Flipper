@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { OfflineState } from '@/components/ui/states/OfflineState';
 
 export const metadata: Metadata = {
   title: 'Albion Pro Flipper',
@@ -17,6 +18,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
           {children}
         </AuthProvider>
         <Toaster theme="dark" position="top-right" />
+        <OfflineState />
       </body>
     </html>
   );

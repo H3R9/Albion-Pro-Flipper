@@ -5,6 +5,8 @@ import { User, onAuthStateChanged } from "firebase/auth";
 import { auth, db, handleFirestoreError, OperationType, signInWithGoogle, signOutUser } from "@/lib/firebase";
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
+import { userProfileSchema } from "@/lib/validation";
+
 interface UserProfile {
   silver: number;
   premium: boolean;
@@ -78,8 +80,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfileObj = async (updates: Partial<UserProfile>) => {
     if (!user || !profile) return;
+    const oldProfile = { ...profile };
     try {
         const newProfile = { ...profile, ...updates };
+        userProfileSchema.parse(newProfile);
         setProfile(newProfile);
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, {
@@ -87,6 +91,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             updatedAt: serverTimestamp()
         });
     } catch(err) {
+        setProfile(oldProfile); // reverte estado
+        if (err instanceof Error && err.name === 'ZodError') {
+            console.error('Invalid profile updates:', err);
+            return;
+        }
         handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
     }
   }

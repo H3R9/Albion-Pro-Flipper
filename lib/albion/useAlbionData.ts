@@ -6,11 +6,13 @@ import {
   analyzeEnchanting,
   analyzeBuyOrderTrades,
   applyDemandScore,
-  MarketData,
-  TradeResult,
 } from './analysis';
+import { MarketData, TradeResult, ScanSettings, ScanFilters, ScanTab } from './types';
 import { getItemsByCategory, filterItems } from './items';
 import { ROYAL_CITIES } from './utils';
+
+import { scanSettingsSchema, scanFiltersSchema } from '../validation';
+import { handleError, AppError } from '../errors';
 
 export function useAlbionData() {
   const [isScanning, setIsScanning] = useState(false);
@@ -27,7 +29,7 @@ export function useAlbionData() {
       const data = await fetchMarketData(mats, [...ROYAL_CITIES, 'Caerleon']);
       setGlobalEnchantMaterials(data);
     } catch (e) {
-      console.error('Error preloading enchant materials', e);
+      handleError(e, 'Preload Materiais');
     }
   };
 
@@ -40,13 +42,21 @@ export function useAlbionData() {
 
   const scan = useCallback(
     async (
-      currentTab: 'black' | 'royal' | 'enchant' | 'buyorders',
+      currentTab: ScanTab,
       category: string,
       tierFilter: string,
       enchantFilter: string,
-      settings: any,
-      filters: any
+      settings: ScanSettings,
+      filters: ScanFilters
     ) => {
+      try {
+        scanSettingsSchema.parse(settings);
+        scanFiltersSchema.parse(filters);
+      } catch (e) {
+        handleError(e, 'Validação de Configurações');
+        throw new Error('Configurações ou filtros inválidos.');
+      }
+
       if (isScanning) return;
       setIsScanning(true);
       setResults([]);
@@ -137,7 +147,7 @@ export function useAlbionData() {
 
         setProgress({ current: 100, total: 100, text: 'Scan completo.' });
       } catch (e) {
-        console.error('Scan error:', e);
+        handleError(e, 'Scan Principal');
         setProgress({ current: 0, total: 100, text: 'Erro durante o scan.' });
       } finally {
         setIsScanning(false);

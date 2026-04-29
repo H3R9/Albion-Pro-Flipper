@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Loader2, Sparkles, Wallet, Pickaxe, MapPin, Search, Save, FileText } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { cn } from '@/lib/utils';
-import { TradeResult } from '@/lib/albion/analysis';
+import { TradeResult } from '@/lib/albion/types';
 import { formatSilver, ROYAL_CITIES } from '@/lib/albion/utils';
 import { getItemFullName } from '@/lib/albion/items';
 import { MarkdownMessage } from './MarkdownMessage';
@@ -147,7 +147,7 @@ export function InventoryPlanner({ results, settings }: InventoryPlannerProps) {
 Tier do Item Flat: ${tierStr}
 ID da Imagem: ${imageId}
 Custo do Item Base Flat: ${formatSilver(r.baseCost || 0)} em ${r.baseCity} via ${methodStr} (Preço atualizado há ${r.cityAge} min)
-Materiais Necessários: ${r.runesRequired?.map(rune => `${rune.amount}x ${rune.tier} ${rune.type} (Custo de mercado: ${formatSilver(rune.price * rune.amount)})`).join(', ')}
+Materiais Necessários: ${r.runesRequired?.map(rune => `${rune.amount}x ${getItemFullName(rune.id)} (Custo de mercado: ${formatSilver(rune.price * rune.amount)})`).join(', ')}
 Venda no Black Market: ${formatSilver(r.sellPrice)} (Preço atualizado há ${r.bmAge} min)
 Volume de Venda BM (24h): ${r.volume24h || 0} unidades vendidas
 ${profitDesc}`;

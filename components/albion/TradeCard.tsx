@@ -12,7 +12,7 @@ import {
   calculateMargin,
 } from '@/lib/albion/utils';
 import { getItemFullName } from '@/lib/albion/items';
-import { TradeResult } from '@/lib/albion/analysis';
+import { TradeResult } from '@/lib/albion/types';
 import { Star, Route, BarChart2, Calculator, Check, Copy } from 'lucide-react';
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -30,7 +30,7 @@ function ageIndicator(ageMinutes: number) {
   return { cls: 'border-red-500', label: 'Muito antigo' };
 }
 
-export function TradeCard({ result, index }: { result: TradeResult; index: number }) {
+export const TradeCard = React.memo(({ result, index }: { result: TradeResult; index: number }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
@@ -55,7 +55,7 @@ export function TradeCard({ result, index }: { result: TradeResult; index: numbe
 
   const displayProfit = (result.adjustedProfit !== undefined ? result.adjustedProfit : result.profit) * quantity;
 
-  const originCity = result.tradeType === 'enchant' ? result.baseCity : result.sourceCity;
+  const originCity = result.tradeType === 'enchant' ? (result.baseCity || 'Desconhecido') : result.sourceCity;
   const isRed = originCity !== 'Caerleon';
   const routeColor = isRed ? 'bg-red-500/15 text-red-500 border-red-500/30' : 'bg-green-500/15 text-green-500 border-green-500/30';
   const routeText = isRed ? '🔴 Zona Vermelha' : '🟢 Local (Caerleon, Seguro)';
@@ -406,4 +406,6 @@ export function TradeCard({ result, index }: { result: TradeResult; index: numbe
       )}
     </div>
   );
-}
+});
+
+TradeCard.displayName = 'TradeCard';
