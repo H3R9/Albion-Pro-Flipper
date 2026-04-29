@@ -1,17 +1,33 @@
 @import "tailwindcss";
 
+:root {
+  --mw-bg: #0D0D0F;
+  --mw-card: #141418;
+  --mw-card-hover: #1A1A22;
+  --mw-border: #2A2A35;
+  --mw-gold-primary: #C9A84C;
+  --mw-gold-bright: #F0C040;
+  --mw-gold-dark: #8B6914;
+  --mw-green: #4CAF7D;
+  --mw-red: #E05252;
+  --mw-blue-primary: #3B82F6;
+  --mw-text-main: #E8E0D0;
+  --mw-text-muted: #8A8090;
+}
+
 @theme {
-  --color-mw-bg: #0D0D0F;
-  --color-mw-card: #141418;
-  --color-mw-card-hover: #1A1A22;
-  --color-mw-border: #2A2A35;
-  --color-mw-gold-primary: #C9A84C;
-  --color-mw-gold-bright: #F0C040;
-  --color-mw-gold-dark: #8B6914;
-  --color-mw-green: #4CAF7D;
-  --color-mw-red: #E05252;
-  --color-mw-text-main: #E8E0D0;
-  --color-mw-text-muted: #8A8090;
+  --color-mw-bg: var(--mw-bg);
+  --color-mw-card: var(--mw-card);
+  --color-mw-card-hover: var(--mw-card-hover);
+  --color-mw-border: var(--mw-border);
+  --color-mw-gold-primary: var(--mw-gold-primary);
+  --color-mw-gold-bright: var(--mw-gold-bright);
+  --color-mw-gold-dark: var(--mw-gold-dark);
+  --color-mw-green: var(--mw-green);
+  --color-mw-red: var(--mw-red);
+  --color-mw-blue-primary: var(--mw-blue-primary);
+  --color-mw-text-main: var(--mw-text-main);
+  --color-mw-text-muted: var(--mw-text-muted);
 }
 
 @layer utilities {

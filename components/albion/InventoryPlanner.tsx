@@ -222,14 +222,14 @@ Notas sobre a Imagem: Substitua <ID_DA_IMAGEM> pela "ID da Imagem" exata dos dad
   };
 
   return (
-    <div className="bg-[#0b0c10]/80 border border-slate-800 rounded-2xl p-6 shadow-xl w-full mx-auto mt-6 backdrop-blur-sm relative z-10">
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8 border-b border-slate-800 pb-6">
+    <div className="bg-[var(--mw-card)]/80 border border-[var(--mw-border)] rounded-2xl p-6 shadow-xl w-full mx-auto mt-6 backdrop-blur-sm relative z-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8 border-b border-[var(--mw-border)] pb-6">
         <div>
-          <h2 className="text-2xl font-black text-slate-100 flex items-center gap-3 drop-shadow-md">
-            <Wallet className="text-emerald-500" size={28} />
+          <h2 className="text-2xl font-black text-[var(--mw-text-main)] flex items-center gap-3 drop-shadow-md">
+            <Wallet className="text-[var(--mw-green)]" size={28} />
             Planejador de Inventário (IA)
           </h2>
-          <p className="text-slate-400 mt-2 text-sm max-w-2xl leading-relaxed">
+          <p className="text-[var(--mw-text-muted)] mt-2 text-sm max-w-2xl leading-relaxed">
             Informe quanto de prata livre você tem, e os materiais de encantamento no seu baú. 
             A IA combinará seu inventário com as últimas oportunidades de mercado para sugerir o **plano perfeito** de arbitragem e encantamento.
           </p>
@@ -238,7 +238,7 @@ Notas sobre a Imagem: Substitua <ID_DA_IMAGEM> pela "ID da Imagem" exata dos dad
           <button 
              onClick={saveProfileData} 
              disabled={isSavingProfile || !user}
-             className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold rounded-lg border border-slate-600 transition disabled:opacity-50"
+             className="flex items-center gap-2 px-4 py-2 bg-[var(--mw-bg)] hover:bg-[var(--mw-card-hover)] text-[var(--mw-text-main)] text-sm font-bold rounded-lg border border-[var(--mw-border)] transition disabled:opacity-50"
              title={!user ? "Faça login para salvar" : "Salvar Prata e Inventário no perfil"}
           >
              {isSavingProfile ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
@@ -249,8 +249,8 @@ Notas sobre a Imagem: Substitua <ID_DA_IMAGEM> pela "ID da Imagem" exata dos dad
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner">
-            <h3 className="text-emerald-400 font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+          <div className="bg-[var(--mw-bg)] p-4 rounded-xl border border-[var(--mw-border)] shadow-inner">
+            <h3 className="text-[var(--mw-green)] font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
               <Wallet size={16} /> Prata Disponível
             </h3>
             <input 
@@ -258,39 +258,39 @@ Notas sobre a Imagem: Substitua <ID_DA_IMAGEM> pela "ID da Imagem" exata dos dad
               value={silver || ''}
               onChange={(e) => setSilver(parseInt(e.target.value) || 0)}
               placeholder="Ex: 5000000"
-              className="w-full bg-[#0b0c10] border border-slate-700 p-3 rounded-lg text-slate-100 focus:border-emerald-500 transition-colors outline-none"
+              className="w-full bg-[var(--mw-card)] border border-[var(--mw-border)] p-3 rounded-lg text-[var(--mw-text-main)] focus:border-[var(--mw-green)] transition-colors outline-none font-mono"
             />
           </div>
 
-          <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner">
-            <h3 className="text-amber-500 font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+          <div className="bg-[var(--mw-bg)] p-4 rounded-xl border border-[var(--mw-border)] shadow-inner">
+            <h3 className="text-[var(--mw-gold-bright)] font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
               <Pickaxe size={16} /> Seus Materiais
             </h3>
             
             {[4,5,6,7,8].map(tier => (
               <div key={tier} className="mb-4 last:mb-0">
-                <div className="text-slate-300 font-bold text-xs mb-2 border-b border-slate-800 pb-1">Tier {tier}</div>
+                <div className="text-[var(--mw-text-main)] font-bold text-xs mb-2 border-b border-[var(--mw-border)] pb-1">Tier {tier}</div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[10px] text-slate-500 mb-1">Runas (.1)</label>
-                    <input type="number" min="0" placeholder="0" className="w-full bg-[#0b0c10] border border-slate-800 p-2 rounded text-slate-300 text-xs text-center" value={inventory[`${tier}_1`] || ''} onChange={e => updateInv(tier, 1, e.target.value)} />
+                    <label className="block text-[10px] text-[var(--mw-text-muted)] mb-1 uppercase tracking-widest font-bold">Runas (.1)</label>
+                    <input type="number" min="0" placeholder="0" className="w-full bg-[var(--mw-card)] border border-[var(--mw-border)] p-2 rounded text-[var(--mw-text-main)] text-xs text-center font-mono focus:border-[var(--mw-gold-primary)] outline-none" value={inventory[`${tier}_1`] || ''} onChange={e => updateInv(tier, 1, e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-500 mb-1">Almas (.2)</label>
-                    <input type="number" min="0" placeholder="0" className="w-full bg-[#0b0c10] border border-slate-800 p-2 rounded text-slate-300 text-xs text-center" value={inventory[`${tier}_2`] || ''} onChange={e => updateInv(tier, 2, e.target.value)} />
+                    <label className="block text-[10px] text-[var(--mw-text-muted)] mb-1 uppercase tracking-widest font-bold">Almas (.2)</label>
+                    <input type="number" min="0" placeholder="0" className="w-full bg-[var(--mw-card)] border border-[var(--mw-border)] p-2 rounded text-[var(--mw-text-main)] text-xs text-center font-mono focus:border-[var(--mw-gold-primary)] outline-none" value={inventory[`${tier}_2`] || ''} onChange={e => updateInv(tier, 2, e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-500 mb-1">Relíquias (.3)</label>
-                    <input type="number" min="0" placeholder="0" className="w-full bg-[#0b0c10] border border-slate-800 p-2 rounded text-slate-300 text-xs text-center" value={inventory[`${tier}_3`] || ''} onChange={e => updateInv(tier, 3, e.target.value)} />
+                    <label className="block text-[10px] text-[var(--mw-text-muted)] mb-1 uppercase tracking-widest font-bold">Relíquias(.3)</label>
+                    <input type="number" min="0" placeholder="0" className="w-full bg-[var(--mw-card)] border border-[var(--mw-border)] p-2 rounded text-[var(--mw-text-main)] text-xs text-center font-mono focus:border-[var(--mw-gold-primary)] outline-none" value={inventory[`${tier}_3`] || ''} onChange={e => updateInv(tier, 3, e.target.value)} />
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner">
-            <h3 className="text-blue-400 font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
-              <MapPin size={16} /> Cidades para Comprar (Itens Flat)
+          <div className="bg-[var(--mw-bg)] p-4 rounded-xl border border-[var(--mw-border)] shadow-inner">
+            <h3 className="text-[var(--mw-blue-primary)] font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+              <MapPin size={16} /> Cidades Base (Itens Flat)
             </h3>
             <div className="flex flex-wrap gap-2">
               {ROYAL_CITIES.map(city => (
@@ -298,10 +298,10 @@ Notas sobre a Imagem: Substitua <ID_DA_IMAGEM> pela "ID da Imagem" exata dos dad
                   key={city}
                   onClick={() => toggleCity(city)}
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
+                    "px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors",
                     cities.includes(city)
-                      ? "bg-blue-500/20 border-blue-500/50 text-blue-300"
-                      : "bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300"
+                      ? "bg-[var(--mw-blue-primary)]/20 border-[var(--mw-blue-primary)]/50 text-[var(--mw-blue-primary)]"
+                      : "bg-[var(--mw-card)] border-[var(--mw-border)] text-[var(--mw-text-muted)] hover:text-[var(--mw-text-main)]"
                   )}
                 >
                   {city}
@@ -313,13 +313,13 @@ Notas sobre a Imagem: Substitua <ID_DA_IMAGEM> pela "ID da Imagem" exata dos dad
           <button 
             onClick={handleAnalyze}
             disabled={isLoading || results.length === 0}
-            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black uppercase tracking-wider rounded-xl transition shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:shadow-none"
+            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[var(--mw-green)] hover:bg-emerald-500 text-black font-black uppercase tracking-wider rounded-xl transition shadow-[0_0_20px_rgba(76,175,125,0.3)] disabled:opacity-50 disabled:shadow-none"
           >
             {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
             {isLoading ? "Processando e Analisando..." : "Gerar Plano Estratégico"}
           </button>
           {results.length === 0 && (
-             <p className="text-[11px] text-amber-500 text-center font-medium mt-2">
+             <p className="text-[11px] text-[var(--mw-gold-bright)] text-center font-medium mt-2">
                Execute o scan na aba &quot;Arbitragem BM&quot; primeiro para gerar oportunidades.
              </p>
           )}
@@ -327,22 +327,22 @@ Notas sobre a Imagem: Substitua <ID_DA_IMAGEM> pela "ID da Imagem" exata dos dad
         </div>
 
         <div className="lg:col-span-2">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-2xl h-full min-h-[500px] flex flex-col">
-            <div className="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center gap-2">
-              <Sparkles className="text-emerald-500" size={18} />
-              <h3 className="font-bold text-slate-200">Relatório da Inteligência Artificial</h3>
+          <div className="bg-[var(--mw-bg)] border border-[var(--mw-border)] rounded-xl overflow-hidden shadow-2xl h-full min-h-[500px] flex flex-col">
+            <div className="bg-[var(--mw-card)] px-4 py-3 border-b border-[var(--mw-border)] flex items-center gap-2">
+              <Sparkles className="text-[var(--mw-green)]" size={18} />
+              <h3 className="font-bold text-[var(--mw-text-main)] uppercase tracking-widest text-xs">Relatório da Inteligência Artificial</h3>
             </div>
             
             <div className="flex-1 p-5 overflow-y-auto">
                {messages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 gap-4 opacity-50">
-                     <Search size={48} className="text-emerald-500/50" />
-                     <p className="max-w-xs">Preencha sua prata, seus materiais e clique em <strong>Gerar Plano Estratégico</strong> para receber a análise detalhada.</p>
+                  <div className="h-full flex flex-col items-center justify-center text-center text-[var(--mw-text-muted)] gap-4 opacity-50">
+                     <Search size={48} className="text-[var(--mw-green)]/50" />
+                     <p className="max-w-xs text-sm">Preencha sua prata, seus materiais e clique em <strong className="text-[var(--mw-text-main)]">Gerar Plano Estratégico</strong> para receber a análise detalhada.</p>
                   </div>
                ) : (
                   <div>
                     {messages.map((msg, idx) => (
-                      <div key={idx} className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/50 shadow-sm relative mb-4">
+                      <div key={idx} className="bg-[var(--mw-card)] p-6 rounded-xl border border-[var(--mw-border)] shadow-sm relative mb-4">
                          <MarkdownMessage content={msg.text} />
                       </div>
                     ))}
@@ -352,7 +352,7 @@ Notas sobre a Imagem: Substitua <ID_DA_IMAGEM> pela "ID da Imagem" exata dos dad
                         <button 
                           onClick={saveReport}
                           disabled={isSavingReport || !user}
-                          className="flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-500 text-white text-xs font-bold rounded-md border border-blue-500/50 transition disabled:opacity-50"
+                          className="flex items-center gap-2 px-4 py-2 bg-[var(--mw-blue-primary)]/20 hover:bg-[var(--mw-blue-primary)]/40 text-[var(--mw-blue-primary)] text-xs font-bold rounded-md border border-[var(--mw-blue-primary)]/50 transition disabled:opacity-50"
                         >
                           {isSavingReport ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
                           Salvar Relatório no Perfil

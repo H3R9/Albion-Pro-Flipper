@@ -47,7 +47,7 @@ export function Dashboard({ stats, refreshes, isNewRecord }: DashboardProps) {
   const maxDist = Math.max(...Object.values(stats.profitDistribution));
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-500 mt-6">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[var(--mw-card)]/80 border border-[var(--mw-border)] rounded-xl p-5 shadow-lg relative overflow-hidden group">
           <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:opacity-10 transition-opacity"><Activity size={100} /></div>

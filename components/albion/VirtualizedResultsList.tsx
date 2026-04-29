@@ -95,32 +95,32 @@ export function VirtualizedResultsList({
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-[var(--mw-border)] bg-[var(--mw-bg)]/50 shadow-xl overflow-hidden">
       {/* Sticky Table Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between px-6 py-3 bg-[var(--mw-bg)]/80 backdrop-blur-md border-b border-[var(--mw-border)] z-10 sticky top-0 shadow-sm gap-4">
+      <div className="flex flex-col md:flex-row items-center justify-between px-6 py-3 bg-[var(--mw-card)]/80 backdrop-blur-md border-b border-[var(--mw-border)] z-10 sticky top-0 shadow-sm gap-4">
         
         {/* Quick Filters */}
         <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto shrink-0 scrollbar-hide pb-1 md:pb-0">
           <button 
             onClick={() => setScoreFilter('ALL')}
-            className={cn("px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors", scoreFilter === 'ALL' ? "bg-slate-800 text-slate-200" : "bg-transparent text-slate-500 hover:text-slate-300")}
+            className={cn("px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors border", scoreFilter === 'ALL' ? "bg-[var(--mw-bg)] text-[var(--mw-text-main)] border-[var(--mw-border)] shadow-sm" : "bg-transparent text-[var(--mw-text-muted)] border-transparent hover:text-[var(--mw-text-main)] hover:bg-[var(--mw-card-hover)]")}
           >
             Todos
           </button>
           <button 
             onClick={() => setScoreFilter('EXECUTE_WATCH')}
-            className={cn("px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors", scoreFilter === 'EXECUTE_WATCH' ? "bg-[var(--mw-gold-bright)]/20 text-[var(--mw-gold-bright)] border border-[var(--mw-gold-bright)]/30" : "bg-transparent text-slate-500 hover:text-slate-300")}
+            className={cn("px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors border", scoreFilter === 'EXECUTE_WATCH' ? "bg-[var(--mw-gold-bright)]/10 text-[var(--mw-gold-bright)] border-[var(--mw-gold-bright)]/30" : "bg-transparent text-[var(--mw-text-muted)] border-transparent hover:text-[var(--mw-text-main)] hover:bg-[var(--mw-card-hover)]")}
           >
             EXECUTE + WATCH
           </button>
           <button 
             onClick={() => setScoreFilter('EXECUTE')}
-            className={cn("px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors", scoreFilter === 'EXECUTE' ? "bg-[var(--mw-green)]/20 text-[var(--mw-green)] border border-[var(--mw-green)]/30" : "bg-transparent text-slate-500 hover:text-slate-300")}
+            className={cn("px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors border", scoreFilter === 'EXECUTE' ? "bg-[var(--mw-green)]/10 text-[var(--mw-green)] border-[var(--mw-green)]/30" : "bg-transparent text-[var(--mw-text-muted)] border-transparent hover:text-[var(--mw-text-main)] hover:bg-[var(--mw-card-hover)]")}
           >
             Apenas EXECUTE
           </button>
         </div>
 
-        <div className="flex-1 hidden lg:block text-center text-xs font-bold text-[var(--mw-text-muted)] uppercase tracking-widest">
-          Rota de Arbitragem
+        <div className="flex-1 hidden lg:block text-center text-[10px] font-bold text-[var(--mw-text-muted)] uppercase tracking-widest">
+          Rota de Arbitragem Fixa
         </div>
         <div className="w-full md:w-[160px] flex justify-end shrink-0">
           <button 
@@ -162,7 +162,7 @@ export function VirtualizedResultsList({
                   width: '100%',
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
-                className={cn("px-4 pb-3", rowIsEven ? "bg-transparent" : "bg-black/10")}
+                className={cn("px-4 pt-3 pb-3 border-b border-[var(--mw-border)]/50", rowIsEven ? "bg-[var(--mw-bg)]/20" : "bg-black/10")}
               >
                 <TradeCard 
                   result={res} 
@@ -176,8 +176,8 @@ export function VirtualizedResultsList({
         </div>
       </div>
       {results.length > 100 && (
-        <div className="text-center p-3 text-[10px] uppercase tracking-widest font-bold text-[var(--mw-text-muted)] bg-[var(--mw-card)]/50 border-t border-[var(--mw-border)]">
-          Mostrando os {results.length} melhores resultados ordenados por lucro.
+        <div className="text-center p-4 text-[10px] uppercase tracking-widest font-bold text-[var(--mw-text-muted)] bg-[var(--mw-card)]/50 border-t border-[var(--mw-border)]">
+          Mostrando os {results.length} melhores resultados ordenados por score.
         </div>
       )}
     </div>

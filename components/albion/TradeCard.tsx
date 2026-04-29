@@ -336,18 +336,18 @@ export const TradeCard = React.memo(({ result, index, isNew, maxProfit }: { resu
       <div className={cn("absolute bottom-0 left-0 h-1 transition-all w-full opacity-80", buyAge.cls.replace('border-', 'bg-'))} />
 
       {isOpen && (
-        <div className="border-t border-slate-700/50 bg-slate-950 p-4 sm:p-6 shadow-inner">
+        <div className="border-t border-[var(--mw-border)]/50 bg-[var(--mw-bg)] p-4 sm:p-6 shadow-inner">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* INSTRUCTIONS */}
             <div className="lg:col-span-2">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
-                <h4 className="text-[11px] font-black text-slate-400 flex items-center gap-2 uppercase tracking-widest bg-slate-900 border border-slate-800 px-3 py-1.5 rounded w-fit m-0">
-                  <Route size={14} className="text-amber-500" /> Roteiro de Execução
+                <h4 className="text-[11px] font-black text-[var(--mw-text-muted)] flex items-center gap-2 uppercase tracking-widest bg-[var(--mw-card)] border border-[var(--mw-border)] px-3 py-1.5 rounded w-fit m-0">
+                  <Route size={14} className="text-[var(--mw-gold-primary)]" /> Roteiro de Execução
                 </h4>
                 
-                <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded text-xs shadow-inner">
-                  <span className="text-slate-400 font-semibold uppercase">Simulador (Qtd)</span>
+                <div className="flex items-center gap-2 bg-[var(--mw-card)] border border-[var(--mw-border)] px-3 py-1.5 rounded text-xs shadow-inner">
+                  <span className="text-[var(--mw-text-muted)] font-semibold uppercase">Simulador (Qtd)</span>
                   <input 
                     type="number" 
                     min="1" 
@@ -355,16 +355,16 @@ export const TradeCard = React.memo(({ result, index, isNew, maxProfit }: { resu
                     value={quantity} 
                     onChange={handleQuantityChange}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-16 bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-amber-500 font-mono font-bold outline-none focus:border-amber-500 text-center"
+                    className="w-16 bg-[var(--mw-bg)] border border-[var(--mw-border)] rounded px-2 py-0.5 text-[var(--mw-gold-bright)] font-mono font-bold outline-none focus:border-[var(--mw-gold-primary)] text-center"
                   />
                 </div>
               </div>
-              <div className="bg-slate-900/30 p-2 sm:p-4 rounded-xl border border-slate-800/60">
+              <div className="bg-[var(--mw-card)]/40 p-2 sm:p-4 rounded-xl border border-[var(--mw-border)]">
                  {renderSteps()}
                  
                  {result.scenarios && result.scenarios.length > 1 && (
-                   <div className="mt-4 pt-4 border-t border-slate-800/60">
-                     <h5 className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-bold">Alternativas Encontradas:</h5>
+                   <div className="mt-4 pt-4 border-t border-[var(--mw-border)]">
+                     <h5 className="text-[10px] text-[var(--mw-text-muted)] uppercase tracking-wider mb-2 font-bold">Alternativas Encontradas:</h5>
                      <div className="space-y-2">
                        {result.scenarios.filter((s: any) => s.id !== result.scenarioUsed).map((s: any, idx: number) => {
                          const sBaseName = getItemFullName(s.currentBaseId);
@@ -372,16 +372,16 @@ export const TradeCard = React.memo(({ result, index, isNew, maxProfit }: { resu
                          const sMargin = calculateMargin(s.totalCost, sProfit);
                          const isNative = s.runesRequired.length === 0;
                          return (
-                           <div key={idx} className="flex flex-col sm:flex-row justify-between bg-slate-950/50 p-2 rounded border border-slate-800/50 text-[11px]">
+                           <div key={idx} className="flex flex-col sm:flex-row justify-between bg-[var(--mw-bg)]/50 p-2 rounded border border-[var(--mw-border)] text-[11px]">
                              <div className="flex flex-col gap-1">
-                               <strong className="text-slate-300">{isNative ? 'Comprar item já pronto' : `Comprar ${sBaseName} + Runas`}</strong>
-                               <span className="text-slate-500">
-                                 Custo total: <span className="text-red-400 font-mono">{formatSilver(s.totalCost)}</span>
+                               <strong className="text-[var(--mw-text-main)]">{isNative ? 'Comprar item já pronto' : `Comprar ${sBaseName} + Runas`}</strong>
+                               <span className="text-[var(--mw-text-muted)]">
+                                 Custo total: <span className="text-[var(--mw-red)] font-mono">{formatSilver(s.totalCost)}</span>
                                </span>
                              </div>
                              <div className="flex flex-col items-end gap-1 mt-2 sm:mt-0">
-                               <span className={cn("font-bold", sProfit > 0 ? "text-green-400" : "text-red-400")}>Lucro: {sProfit > 0 ? '+' : ''}{formatSilver(sProfit)}</span>
-                               <span className="text-slate-500 font-mono">MG: {sMargin.toFixed(1)}%</span>
+                               <span className={cn("font-bold", sProfit > 0 ? "text-[var(--mw-green)]" : "text-[var(--mw-red)]")}>Lucro: {sProfit > 0 ? '+' : ''}{formatSilver(sProfit)}</span>
+                               <span className="text-[var(--mw-text-muted)] font-mono">MG: {sMargin.toFixed(1)}%</span>
                              </div>
                            </div>
                          );
@@ -390,19 +390,19 @@ export const TradeCard = React.memo(({ result, index, isNew, maxProfit }: { resu
                    </div>
                  )}
 
-                 <div className="mt-6 p-4 bg-gradient-to-r from-amber-500/10 to-transparent border-l-4 border-amber-500 rounded-r-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+                 <div className="mt-6 p-4 bg-gradient-to-r from-[var(--mw-gold-primary)]/10 to-transparent border-l-4 border-[var(--mw-gold-primary)] rounded-r-lg flex flex-col sm:flex-row justify-between items-center gap-4 shadow-sm">
                    <div className="flex items-center gap-3">
-                     <div className="bg-amber-500/20 p-2 rounded-full"><Calculator className="text-amber-500" size={20} /></div>
+                     <div className="bg-[var(--mw-gold-primary)]/20 p-2 rounded-full"><Calculator className="text-[var(--mw-gold-bright)]" size={20} /></div>
                      <div>
-                       <span className="text-slate-300 font-bold uppercase tracking-wide text-xs block">Balanço Final Esperado</span>
-                       <span className="text-[10px] text-slate-500">Custo Total: {formatSilver((result.buyPrice + (result.tradeType === 'enchant' && result.baseCost ? result.baseCost : 0)) * quantity)}</span>
+                       <span className="text-[var(--mw-text-main)] font-bold uppercase tracking-wide text-xs block">Balanço Final Esperado</span>
+                       <span className="text-[10px] text-[var(--mw-text-muted)]">Custo Total: {formatSilver((result.buyPrice + (result.tradeType === 'enchant' && result.baseCost ? result.baseCost : 0)) * quantity)}</span>
                      </div>
                    </div>
                    <div className="text-right">
-                     <div className={cn("text-2xl font-black drop-shadow-md", displayProfit >= 0 ? "text-amber-400" : "text-red-400")}>
+                     <div className={cn("text-2xl font-black drop-shadow-md", displayProfit >= 0 ? "text-[var(--mw-gold-bright)]" : "text-[var(--mw-red)]")}>
                        {displayProfit >= 0 ? '+' : ''}{formatSilver(Math.floor(displayProfit))}
                      </div>
-                     <div className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 inline-block mt-1">Margem Real: {result.margin.toFixed(1)}%</div>
+                     <div className="text-[10px] text-[var(--mw-green)] font-mono bg-[var(--mw-green)]/10 px-2 py-0.5 rounded border border-[var(--mw-green)]/20 inline-block mt-1">Margem Real: {result.margin.toFixed(1)}%</div>
                    </div>
                  </div>
               </div>
@@ -410,38 +410,38 @@ export const TradeCard = React.memo(({ result, index, isNew, maxProfit }: { resu
             
             {/* DATA QUALITY */}
             <div className="flex flex-col gap-4">
-              <div className="bg-slate-900 rounded-xl border border-slate-800/60 p-4">
-                <h4 className="text-[11px] font-black text-slate-400 flex items-center gap-2 mb-4 uppercase tracking-widest">
+              <div className="bg-[var(--mw-card)] rounded-xl border border-[var(--mw-border)] p-4 shadow-sm">
+                <h4 className="text-[11px] font-black text-[var(--mw-text-muted)] flex items-center gap-2 mb-4 uppercase tracking-widest">
                   <BarChart2 size={14} className="text-blue-500" /> Qualidade dos Dados
                 </h4>
                 
                 <div className="space-y-3">
-                   <div className="flex justify-between items-center pb-2 border-b border-slate-800/50">
-                     <span className="text-xs text-slate-400">Preço Compra ({originCity}):</span>
+                   <div className="flex justify-between items-center pb-2 border-b border-[var(--mw-border)]/50">
+                     <span className="text-xs text-[var(--mw-text-muted)]">Preço Compra ({originCity}):</span>
                      <div className="flex flex-col items-end">
-                        <span className="font-mono text-xs font-bold text-slate-200">{formatPrice(result.buyPrice)}</span>
-                        <span className={cn("text-[9px] font-bold px-1.5 rounded mt-0.5 border", buyAge.cls.replace('border-', 'text-').replace('border-', 'bg-').replace('text-', 'bg-').replace('500', '500/10') , buyAge.cls.replace('border-', 'text-').replace('border-', 'border-').replace('500', '500/20'))}>
+                        <span className="font-mono text-xs font-bold text-[var(--mw-text-main)]">{formatPrice(result.buyPrice)}</span>
+                        <span className={cn("text-[9px] font-bold px-1.5 rounded mt-0.5 border text-blue-300 border-blue-400 bg-blue-500/10")}>
                           <LiveTimeAgo dateStr={result.buyDate} />
                         </span>
                      </div>
                    </div>
                    
-                   <div className="flex justify-between items-center pb-2 border-b border-slate-800/50">
-                     <span className="text-xs text-slate-400">Preço Black Market:</span>
+                   <div className="flex justify-between items-center pb-2 border-b border-[var(--mw-border)]/50">
+                     <span className="text-xs text-[var(--mw-text-muted)]">Preço Black Market:</span>
                      <div className="flex flex-col items-end">
-                        <span className="font-mono text-xs font-bold text-amber-400">{formatPrice(result.sellPrice)}</span>
-                        <span className={cn("text-[9px] font-bold px-1.5 rounded mt-0.5 border", sellAge.cls.replace('border-', 'text-').replace('border-', 'bg-').replace('text-', 'bg-').replace('500', '500/10') , sellAge.cls.replace('border-', 'text-').replace('border-', 'border-').replace('500', '500/20'))}>
+                        <span className="font-mono text-xs font-bold text-[var(--mw-gold-bright)]">{formatPrice(result.sellPrice)}</span>
+                        <span className={cn("text-[9px] font-bold px-1.5 rounded mt-0.5 border text-blue-300 border-blue-400 bg-blue-500/10")}>
                            <LiveTimeAgo dateStr={result.sellDate} />
                         </span>
                      </div>
                    </div>
                    
                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-slate-400">Volume (24h BM):</span>
-                      <span className={cn("font-mono text-xs font-bold px-2 py-0.5 rounded border", 
-                         result.volume24h && result.volume24h > 10 ? "text-green-400 bg-green-500/10 border-green-500/20" : 
-                         result.volume24h && result.volume24h > 0 ? "text-yellow-400 bg-yellow-500/10 border-yellow-500/20" : 
-                         "text-slate-400 bg-slate-800 border-slate-700"
+                      <span className="text-xs text-[var(--mw-text-muted)]">Volume (24h BM):</span>
+                      <span className={cn("font-mono text-[10px] font-bold px-2 py-0.5 rounded border shadow-sm", 
+                         result.volume24h && result.volume24h > 10 ? "text-[var(--mw-green)] bg-[var(--mw-green)]/10 border-[var(--mw-green)]/20" : 
+                         result.volume24h && result.volume24h > 0 ? "text-[var(--mw-gold-bright)] bg-[var(--mw-gold-bright)]/10 border-[var(--mw-gold-bright)]/20" : 
+                         "text-[var(--mw-text-muted)] bg-[var(--mw-bg)] border-[var(--mw-border)]"
                       )}>
                          {result.volume24h !== undefined ? `${result.volume24h} / 24h` : 'Nenhum'}
                       </span>
@@ -449,8 +449,8 @@ export const TradeCard = React.memo(({ result, index, isNew, maxProfit }: { resu
                 </div>
               </div>
               
-              <div className="mt-auto bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-[11px] text-blue-200/80 italic text-center">
-                 Dica: Sempre confira os preços in-game antes de viajar para Zona Vermelha. Transportes fora de Caerleon correm risco de gank.
+              <div className="mt-auto bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-[10px] uppercase font-bold text-blue-300 tracking-wide text-center leading-relaxed">
+                 Dica: Sempre confira os preços no jogo antes de viajar para Zona Vermelha.
               </div>
             </div>
 

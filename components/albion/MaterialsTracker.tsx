@@ -206,16 +206,16 @@ export function MaterialsTracker() {
   });
 
   return (
-    <div className="bg-[#0b0c10]/80 border border-slate-800 rounded-2xl p-6 shadow-xl w-full mx-auto mt-6 backdrop-blur-sm relative z-10">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-slate-800 pb-6 relative">
+    <div className="bg-[var(--mw-card)]/80 border border-[var(--mw-border)] rounded-xl p-6 shadow-lg w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-[var(--mw-border)] pb-6 relative">
         <div>
-          <h2 className="text-2xl font-black text-slate-100 flex items-center gap-3 drop-shadow-md">
-            <RefreshCw className="text-amber-500" size={28} />
+          <h2 className="text-xl font-black text-[var(--mw-text-main)] flex items-center gap-3 drop-shadow-md">
+            <RefreshCw className="text-[var(--mw-gold-bright)]" size={24} />
             Mercado de Encantamentos
           </h2>
-          <p className="text-slate-400 mt-2 text-sm max-w-2xl leading-relaxed">
-            Rastreie as cidades com os melhores preços para comprar <strong className="text-slate-300">Runas, Almas e Relíquias</strong>. 
-            Identifique as melhores opções para <strong className="text-amber-500 font-bold">Venda Direta</strong> (se precisa urgente) ou <strong className="text-blue-400 font-bold">Pedidos de Compra</strong> (se quer economizar).
+          <p className="text-[var(--mw-text-muted)] mt-2 text-sm max-w-2xl leading-relaxed">
+            Rastreie as cidades com os melhores preços para comprar <strong className="text-[var(--mw-text-main)]">Runas, Almas e Relíquias</strong>. 
+            Identifique as melhores opções para <strong className="text-[var(--mw-gold-primary)] font-bold">Venda Direta</strong> (se precisa urgente) ou <strong className="text-blue-400 font-bold">Pedidos de Compra</strong> (se quer economizar).
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -224,8 +224,8 @@ export function MaterialsTracker() {
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 text-sm font-bold rounded-md transition shadow-sm",
               alertsEnabled 
-                ? "bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20" 
-                : "bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200 hover:bg-slate-700"
+                ? "bg-[var(--mw-gold-dark)]/20 text-[var(--mw-gold-bright)] border border-[var(--mw-gold-bright)]/30 hover:bg-[var(--mw-gold-dark)]/30" 
+                : "bg-[var(--mw-bg)] text-[var(--mw-text-muted)] border border-[var(--mw-border)] hover:text-white hover:bg-[var(--mw-card-hover)]"
             )}
           >
             {alertsEnabled ? <Bell className="animate-pulse" size={16} /> : <BellOff size={16} />}
@@ -235,22 +235,22 @@ export function MaterialsTracker() {
           <button 
             onClick={fetchMaterials} 
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-lg transition border border-amber-600 disabled:opacity-50 shadow-md whitespace-nowrap"
+            className="flex items-center gap-2 px-6 py-2 bg-[var(--mw-gold-primary)] hover:bg-[var(--mw-gold-bright)] text-black font-bold rounded shadow-md whitespace-nowrap text-sm disabled:opacity-50 transition-colors"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
             Atualizar Cotações
           </button>
         </div>
       </div>
 
-      <div className="bg-slate-900/60 border border-amber-500/20 rounded-xl p-4 mb-8 flex gap-4 items-start shadow-inner">
-        <div className="bg-amber-500/10 p-2 rounded-full hidden sm:block">
-          <RefreshCw size={24} className="text-amber-500" />
+      <div className="bg-[var(--mw-bg)]/60 border border-[var(--mw-border)] rounded-xl p-4 mb-8 flex gap-4 items-start shadow-sm">
+        <div className="bg-[var(--mw-gold-primary)]/10 p-2 rounded-lg hidden sm:block">
+          <RefreshCw size={20} className="text-[var(--mw-gold-bright)]" />
         </div>
         <div className="flex-1">
-          <h4 className="text-amber-500 font-bold text-sm mb-1">Os preços estão desatualizados? Atualize você mesmo!</h4>
-          <p className="text-slate-400 text-xs leading-relaxed max-w-4xl">
-            Esta ferramenta usa preços do <strong className="text-slate-300">Albion Data Project</strong>, mantido pela comunidade. Para atualizar as cotações: baixe e execute o <a href="https://github.com/ao-data/albiondata-client/releases" target="_blank" rel="noreferrer" className="text-amber-400 hover:underline hover:text-amber-300">Albion Data Client (GitHub)</a> em seu computador enquanto joga. Sempre que você visita o mercado do jogo e visualiza itens, o client atualiza a rede global automaticamente e os preços novos aparecerão aqui após clicar em &quot;Atualizar Cotações&quot;!
+          <h4 className="text-[var(--mw-gold-bright)] font-bold text-sm mb-1">Os preços estão desatualizados? Atualize você mesmo!</h4>
+          <p className="text-[var(--mw-text-muted)] text-xs leading-relaxed max-w-4xl">
+            Esta ferramenta usa preços do <strong className="text-[var(--mw-text-main)]">Albion Data Project</strong>, mantido pela comunidade. Para atualizar as cotações: baixe e execute o <a href="https://github.com/ao-data/albiondata-client/releases" target="_blank" rel="noreferrer" className="text-[var(--mw-gold-primary)] hover:underline hover:text-[var(--mw-gold-bright)]">Albion Data Client (GitHub)</a> em seu computador enquanto joga. Sempre que você visita o mercado do jogo e visualiza itens, o client atualiza a rede global automaticamente e os preços novos aparecerão aqui após clicar em &quot;Atualizar Cotações&quot;!
           </p>
         </div>
       </div>
@@ -262,8 +262,8 @@ export function MaterialsTracker() {
       )}
 
       {loading && data.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 flex flex-col items-center">
-          <Loader2 size={32} className="animate-spin mb-4 text-amber-500" />
+        <div className="text-center py-12 text-[var(--mw-text-muted)] flex flex-col items-center">
+          <Loader2 size={32} className="animate-spin mb-4 text-[var(--mw-gold-bright)]" />
           Carregando dados de runas, almas e relíquias...
         </div>
       ) : (
@@ -273,16 +273,16 @@ export function MaterialsTracker() {
             if (!tierItems || tierItems.length === 0) return null;
 
             return (
-              <div key={tier} className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-xl mb-6">
-                <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-5 py-3 font-bold text-slate-100 flex items-center gap-3 border-b border-slate-700">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-                    <span className="font-bold text-amber-500 text-lg">{tier}</span>
+              <div key={tier} className="bg-[var(--mw-bg)] border border-[var(--mw-border)] rounded-xl overflow-hidden shadow-sm mb-6">
+                <div className="bg-[var(--mw-card)] px-5 py-3 font-bold text-[var(--mw-text-main)] flex items-center gap-3 border-b border-[var(--mw-border)]">
+                  <div className="w-8 h-8 rounded bg-[var(--mw-gold-primary)]/10 border border-[var(--mw-gold-primary)]/20 flex items-center justify-center">
+                    <span className="font-bold text-[var(--mw-gold-bright)] text-sm">{tier}</span>
                   </div>
-                  <span className="text-lg uppercase tracking-wide">Materiais Tier {tier}</span>
+                  <span className="text-sm uppercase tracking-widest">Materiais Tier {tier}</span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-[#0b0c10]/80 text-slate-300 border-b border-slate-700 font-bold text-xs uppercase tracking-wider">
+                    <thead className="bg-[#0b0c10]/40 text-[var(--mw-text-muted)] border-b border-[var(--mw-border)] font-bold text-[10px] uppercase tracking-widest">
                       <tr>
                         <th className="p-4 pl-6">Material</th>
                         <th className="p-4 text-right">Compra Origin (Multi)</th>
@@ -291,57 +291,59 @@ export function MaterialsTracker() {
                         <th className="p-4 text-center">Tendência (Global)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/80">
+                    <tbody className="divide-y divide-[var(--mw-border)]/50">
                       {tierItems.map(item => {
                         const hasDirect = item.bestDirectPrice < Infinity;
                         const hasOrder = item.bestOrderPrice < Infinity;
 
                         return (
-                          <tr key={item.itemId} className="hover:bg-slate-800/40 transition">
+                          <tr key={item.itemId} className="hover:bg-[var(--mw-card-hover)] transition-colors">
                             <td className="p-4 pl-6 flex items-center gap-3">
-                              <Image src={item.icon} alt={item.name} width={48} height={48} className="w-12 h-12 object-contain bg-slate-900/80 rounded block shadow-sm border border-slate-700" unoptimized referrerPolicy="no-referrer" />
-                              <span className="font-bold text-slate-100 text-base"><span className="text-amber-500 mr-2 drop-shadow">T{item.tier}</span>{item.name}</span>
+                              <div className="w-10 h-10 rounded bg-[var(--mw-bg)] flex items-center justify-center border border-[var(--mw-border)] shrink-0 shadow-sm p-1">
+                                <Image src={item.icon} alt={item.name} width={40} height={40} className="object-contain" unoptimized referrerPolicy="no-referrer" />
+                              </div>
+                              <span className="font-bold text-[var(--mw-text-main)] text-sm"><span className="text-[var(--mw-gold-bright)] mr-1 drop-shadow-sm">T{item.tier}</span>{item.name}</span>
                             </td>
                             
                             <td className="p-4 text-right">
                               {hasOrder ? (
                                 <div className="flex flex-col items-end gap-1.5">
-                                  <div className="flex items-center gap-2 text-slate-100 font-mono text-base bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
-                                    <span className="text-blue-300 text-[10px] font-sans tracking-wide uppercase">PEDIDO ({item.bestOrderCity})</span>
-                                    <span className="font-black text-blue-400 drop-shadow-sm">{formatSilver(item.bestOrderPrice)}</span>
+                                  <div className="flex items-center gap-2 text-[var(--mw-text-main)] font-mono text-sm bg-[var(--mw-card)] px-2 py-0.5 rounded border border-[var(--mw-border)] shadow-sm">
+                                    <span className="text-blue-400 text-[9px] font-sans tracking-widest uppercase">PEDIDO ({item.bestOrderCity})</span>
+                                    <span className="font-black text-blue-400">{formatSilver(item.bestOrderPrice)}</span>
                                   </div>
                                 </div>
                               ) : null}
                               {hasDirect ? (
                                 <div className="flex flex-col items-end gap-1.5 mt-1">
-                                  <div className="flex items-center gap-2 text-slate-100 font-mono text-base bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
-                                    <span className="text-amber-500 text-[10px] font-sans tracking-wide uppercase">DIRETA ({item.bestDirectCity})</span>
-                                    <span className="font-black text-amber-400 drop-shadow-sm">{formatSilver(item.bestDirectPrice)}</span>
+                                  <div className="flex items-center gap-2 text-[var(--mw-text-main)] font-mono text-sm bg-[var(--mw-card)] px-2 py-0.5 rounded border border-[var(--mw-border)] shadow-sm">
+                                    <span className="text-[var(--mw-gold-bright)] text-[9px] font-sans tracking-widest uppercase">DIRETA ({item.bestDirectCity})</span>
+                                    <span className="font-black text-[var(--mw-gold-bright)]">{formatSilver(item.bestDirectPrice)}</span>
                                   </div>
                                 </div>
                               ) : null}
-                              {!hasDirect && !hasOrder && <span className="text-slate-500 text-sm italic">Indisponível</span>}
+                              {!hasDirect && !hasOrder && <span className="text-[var(--mw-text-muted)] text-[10px] uppercase font-bold tracking-widest">Indisponível</span>}
                             </td>
                             
                             <td className="p-4 text-right">
                               {item.caerleonSellPrice && item.caerleonSellPrice < Infinity ? (
                                 <div className="flex flex-col items-end gap-1.5">
-                                  <div className="flex items-center gap-2 text-slate-100 font-mono text-base bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
-                                    <span className="text-emerald-400 text-[10px] font-sans tracking-wide uppercase">VENDA DIRETA</span>
-                                    <span className="font-black text-emerald-400 drop-shadow-sm">{formatSilver(item.caerleonSellPrice)}</span>
+                                  <div className="flex items-center gap-2 text-[var(--mw-text-main)] font-mono text-sm bg-[var(--mw-card)] px-2 py-0.5 rounded border border-[var(--mw-border)] shadow-sm">
+                                    <span className="text-[var(--mw-green)] text-[9px] font-sans tracking-widest uppercase">VENDA DIRETA</span>
+                                    <span className="font-black text-[var(--mw-green)]">{formatSilver(item.caerleonSellPrice)}</span>
                                   </div>
                                 </div>
                               ) : null}
                               {item.caerleonBuyOrder && item.caerleonBuyOrder > 0 ? (
                                 <div className="flex flex-col items-end gap-1.5 mt-1">
-                                  <div className="flex items-center gap-2 text-slate-100 font-mono text-base bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800">
-                                    <span className="text-blue-300 text-[10px] font-sans tracking-wide uppercase">PARA PEDIDO BM</span>
-                                    <span className="font-black text-blue-400 drop-shadow-sm">{formatSilver(item.caerleonBuyOrder)}</span>
+                                  <div className="flex items-center gap-2 text-[var(--mw-text-main)] font-mono text-sm bg-[var(--mw-card)] px-2 py-0.5 rounded border border-[var(--mw-border)] shadow-sm">
+                                    <span className="text-blue-400 text-[9px] font-sans tracking-widest uppercase">PARA PEDIDO BM</span>
+                                    <span className="font-black text-blue-400">{formatSilver(item.caerleonBuyOrder)}</span>
                                   </div>
                                 </div>
                               ) : null}
                               {(!item.caerleonSellPrice || item.caerleonSellPrice === Infinity) && (!item.caerleonBuyOrder || item.caerleonBuyOrder === 0) && (
-                                <span className="text-slate-500 text-sm italic">Indisponível</span>
+                                <span className="text-[var(--mw-text-muted)] text-[10px] uppercase font-bold tracking-widest">Indisponível</span>
                               )}
                             </td>
 
@@ -350,7 +352,7 @@ export function MaterialsTracker() {
                                 const bestBuy = Math.min(item.bestDirectPrice, item.bestOrderPrice);
                                 const bestSell = Math.max(item.caerleonSellPrice !== Infinity ? item.caerleonSellPrice! : 0, item.caerleonBuyOrder || 0);
 
-                                if (bestBuy === Infinity || bestSell === 0) return <span className="text-slate-500">-</span>;
+                                if (bestBuy === Infinity || bestSell === 0) return <span className="text-[var(--mw-text-muted)]">-</span>;
                                 
                                 const valTax = Math.floor(bestSell * 0.04);
                                 const profit = bestSell - bestBuy - valTax;
@@ -358,10 +360,10 @@ export function MaterialsTracker() {
                                 
                                 return (
                                   <div className="flex flex-col items-center">
-                                    <span className={cn("font-bold font-mono text-base", profit > 0 ? "text-green-400" : "text-red-400")}>
+                                    <span className={cn("font-bold font-mono text-sm", profit > 0 ? "text-[var(--mw-green)]" : "text-[var(--mw-red)]")}>
                                       {profit > 0 ? '+' : ''}{formatSilver(profit)}
                                     </span>
-                                    <span className="text-xs text-slate-400">{margin.toFixed(1)}%</span>
+                                    <span className="text-[10px] text-[var(--mw-text-muted)] mt-0.5 font-mono">{margin.toFixed(1)}%</span>
                                   </div>
                                 );
                               })()}
@@ -369,17 +371,17 @@ export function MaterialsTracker() {
 
                             <td className="p-4 text-center">
                               {!item.trend ? (
-                                <Loader2 size={14} className="animate-spin text-slate-500 mx-auto" />
+                                <Loader2 size={14} className="animate-spin text-[var(--mw-text-muted)] mx-auto" />
                               ) : (
                                 <div className={cn(
-                                  "flex items-center justify-center gap-1 font-bold text-xs",
-                                  item.trend === 'up' ? "text-green-400 bg-green-500/10 border border-green-500/20 px-2.5 py-1.5 rounded shadow-inner" : item.trend === 'down' ? "text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-1.5 rounded shadow-inner" : "text-slate-300 bg-slate-800/80 border border-slate-700 px-2.5 py-1.5 rounded shadow-inner"
+                                  "flex items-center justify-center gap-1 font-bold text-[10px] px-2 py-1 rounded w-max mx-auto shadow-sm tracking-wide",
+                                  item.trend === 'up' ? "text-[var(--mw-green)] bg-[var(--mw-green)]/10 border border-[var(--mw-green)]/20" : item.trend === 'down' ? "text-[var(--mw-red)] bg-[var(--mw-red)]/10 border border-[var(--mw-red)]/20" : "text-[var(--mw-text-muted)] bg-[var(--mw-bg)] border border-[var(--mw-border)]"
                                 )}>
-                                  {item.trend === 'up' && <TrendingUp size={14} className="drop-shadow-sm" />}
-                                  {item.trend === 'down' && <TrendingDown size={14} className="drop-shadow-sm" />}
-                                  {item.trend === 'stable' && <Minus size={14} className="drop-shadow-sm" />}
+                                  {item.trend === 'up' && <TrendingUp size={12} />}
+                                  {item.trend === 'down' && <TrendingDown size={12} />}
+                                  {item.trend === 'stable' && <Minus size={12} />}
                                   {item.changePercent !== undefined && item.changePercent !== 0 ? (item.changePercent > 0 ? '+' : '') + item.changePercent + '%' : ''}
-                                  {item.changePercent === 0 && <span className="text-slate-400 font-normal text-[10px]">SEM DADOS</span>}
+                                  {item.changePercent === 0 && <span className="font-normal opacity-70">SEM DADOS</span>}
                                 </div>
                               )}
                             </td>

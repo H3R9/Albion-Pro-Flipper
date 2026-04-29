@@ -34,25 +34,25 @@ export function CraftingCalculator() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <div className="p-6 border-b border-slate-800">
-          <h2 className="text-xl font-bold text-amber-500 flex items-center gap-2">
+      <div className="bg-[var(--mw-card)] border border-[var(--mw-border)] rounded-xl overflow-hidden shadow-lg">
+        <div className="p-6 border-b border-[var(--mw-border)]">
+          <h2 className="text-xl font-bold text-[var(--mw-gold-bright)] flex items-center gap-2">
             <Coins size={20} />
             Calculadora de Lucro de Crafting & Encantamento
           </h2>
         </div>
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-              <h3 className="font-bold text-slate-300">Configuração do Item Base</h3>
+            <div className="space-y-4 bg-[var(--mw-bg)] p-4 rounded-xl border border-[var(--mw-border)] shadow-sm">
+              <h3 className="font-bold text-[var(--mw-text-main)] uppercase tracking-widest text-[11px]">Configuração do Item Base</h3>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-200">Tipo de Item</label>
+                  <label className="text-[10px] font-bold tracking-widest uppercase text-[var(--mw-text-muted)]">Tipo de Item</label>
                   <select 
                     value={itemType} 
                     onChange={e => setItemType(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:border-amber-500 outline-none"
+                    className="w-full bg-[var(--mw-card)] border border-[var(--mw-border)] rounded p-2 text-sm text-[var(--mw-text-main)] focus:border-[var(--mw-gold-primary)] outline-none"
                   >
                     <option value="MAIN_SWORD">Arma 1H</option>
                     <option value="2H_BOW">Arma 2H</option>
@@ -63,11 +63,11 @@ export function CraftingCalculator() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-200">Tier</label>
+                  <label className="text-[10px] font-bold tracking-widest uppercase text-[var(--mw-text-muted)]">Tier</label>
                   <select 
                     value={tier} 
                     onChange={e => setTier(Number(e.target.value))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:border-amber-500 outline-none"
+                    className="w-full bg-[var(--mw-card)] border border-[var(--mw-border)] rounded p-2 text-sm text-[var(--mw-text-main)] focus:border-[var(--mw-gold-primary)] outline-none"
                   >
                     {[4,5,6,7,8].map(t => <option key={t} value={t}>Tier {t}</option>)}
                   </select>
@@ -76,11 +76,11 @@ export function CraftingCalculator() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-200">Encantamento Inicial</label>
+                  <label className="text-[10px] font-bold tracking-widest uppercase text-[var(--mw-text-muted)]">Encantamento Inicial</label>
                   <select 
                     value={enchantLvl} 
                     onChange={e => setEnchantLvl(Number(e.target.value))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:border-amber-500 outline-none"
+                    className="w-full bg-[var(--mw-card)] border border-[var(--mw-border)] rounded p-2 text-sm text-[var(--mw-text-main)] focus:border-[var(--mw-gold-primary)] outline-none"
                   >
                     <option value={0}>Flat (.0)</option>
                     <option value={1}>.1 (Runa)</option>
@@ -88,11 +88,11 @@ export function CraftingCalculator() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-200">Encantamento Alvo</label>
+                  <label className="text-[10px] font-bold tracking-widest uppercase text-[var(--mw-text-muted)]">Encantamento Alvo</label>
                   <select 
                     value={targetEnchantLvl} 
                     onChange={e => setTargetEnchantLvl(Number(e.target.value))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:border-amber-500 outline-none"
+                    className="w-full bg-[var(--mw-card)] border border-[var(--mw-border)] rounded p-2 text-sm text-[var(--mw-text-main)] focus:border-[var(--mw-gold-primary)] outline-none"
                   >
                     <option value={0}>Nenhum (.0)</option>
                     <option value={1}>.1 (Runa)</option>
@@ -102,66 +102,66 @@ export function CraftingCalculator() {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                 <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-200">Taxa Falha/Perda Item (%)</label>
-                 <input type="number" min={0} max={100} value={failureRate} onChange={e => setFailureRate(Number(e.target.value))} className="flex h-10 w-full rounded-md border text-slate-100 bg-slate-900 border-slate-700 px-3 py-2 text-sm focus:border-amber-500 outline-none" />
-                 <p className="text-xs text-amber-500/80 flex items-center gap-1"><AlertTriangle size={12}/> Opcional. Útil para craftings arriscados.</p>
+              <div className="space-y-2 pt-2">
+                 <label className="text-[10px] font-bold tracking-widest uppercase text-[var(--mw-text-muted)]">Taxa Falha/Perda Item (%)</label>
+                 <input type="number" min={0} max={100} value={failureRate} onChange={e => setFailureRate(Number(e.target.value))} className="flex h-10 w-full rounded border text-[var(--mw-text-main)] bg-[var(--mw-card)] border-[var(--mw-border)] px-3 py-2 text-sm focus:border-[var(--mw-gold-primary)] outline-none" />
+                 <p className="text-[10px] text-[var(--mw-gold-dark)] flex items-center gap-1 uppercase tracking-widest font-bold mt-1"><AlertTriangle size={12}/> Opcional. Útil para riscos adicionais.</p>
               </div>
 
             </div>
 
-            <div className="space-y-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-              <h3 className="font-bold text-slate-300">Mercado e Insumos</h3>
+            <div className="space-y-4 bg-[var(--mw-bg)] p-4 rounded-xl border border-[var(--mw-border)] shadow-sm">
+              <h3 className="font-bold text-[var(--mw-text-main)] uppercase tracking-widest text-[11px]">Mercado e Insumos</h3>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-200">Custo de Aquisição Base (Prata)</label>
-                <input type="number" min={0} value={baseCost} onChange={e => setBaseCost(Number(e.target.value))} className="flex h-10 w-full rounded-md border text-slate-100 bg-slate-900 border-slate-700 px-3 py-2 text-sm focus:border-amber-500 outline-none" />
+                <label className="text-[10px] font-bold tracking-widest uppercase text-[var(--mw-text-muted)]">Custo de Aquisição Base (Prata)</label>
+                <input type="number" min={0} value={baseCost} onChange={e => setBaseCost(Number(e.target.value))} className="flex h-10 w-full rounded border text-[var(--mw-text-main)] bg-[var(--mw-card)] border-[var(--mw-border)] px-3 py-2 text-sm focus:border-[var(--mw-gold-primary)] outline-none" />
               </div>
 
               {targetEnchantLvl >= 1 && enchantLvl < 1 && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-200">Runa T{tier} (Unid.) - Qtde: {runesRequired}</label>
-                  <input type="number" min={0} value={runeCost} onChange={e => setRuneCost(Number(e.target.value))} className="flex h-10 w-full rounded-md border text-slate-100 bg-slate-900 border-slate-700 px-3 py-2 text-sm focus:border-amber-500 outline-none" />
+                  <label className="text-[10px] font-bold tracking-widest uppercase text-[var(--mw-text-muted)]">Runa T{tier} (Unid.) - Qtde: {runesRequired}</label>
+                  <input type="number" min={0} value={runeCost} onChange={e => setRuneCost(Number(e.target.value))} className="flex h-10 w-full rounded border text-[var(--mw-text-main)] bg-[var(--mw-card)] border-[var(--mw-border)] px-3 py-2 text-sm focus:border-[var(--mw-gold-primary)] outline-none" />
                 </div>
               )}
               {targetEnchantLvl >= 2 && enchantLvl < 2 && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-200">Alma T{tier} (Unid.) - Qtde: {runesRequired}</label>
-                  <input type="number" min={0} value={runeCost2} onChange={e => setRuneCost2(Number(e.target.value))} className="flex h-10 w-full rounded-md border text-slate-100 bg-slate-900 border-slate-700 px-3 py-2 text-sm focus:border-amber-500 outline-none" />
+                  <label className="text-[10px] font-bold tracking-widest uppercase text-[var(--mw-text-muted)]">Alma T{tier} (Unid.) - Qtde: {runesRequired}</label>
+                  <input type="number" min={0} value={runeCost2} onChange={e => setRuneCost2(Number(e.target.value))} className="flex h-10 w-full rounded border text-[var(--mw-text-main)] bg-[var(--mw-card)] border-[var(--mw-border)] px-3 py-2 text-sm focus:border-[var(--mw-gold-primary)] outline-none" />
                 </div>
               )}
               {targetEnchantLvl >= 3 && enchantLvl < 3 && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-200">Relíquia T{tier} (Unid.) - Qtde: {runesRequired}</label>
-                  <input type="number" min={0} value={runeCost3} onChange={e => setRuneCost3(Number(e.target.value))} className="flex h-10 w-full rounded-md border text-slate-100 bg-slate-900 border-slate-700 px-3 py-2 text-sm focus:border-amber-500 outline-none" />
+                  <label className="text-[10px] font-bold tracking-widest uppercase text-[var(--mw-text-muted)]">Relíquia T{tier} (Unid.) - Qtde: {runesRequired}</label>
+                  <input type="number" min={0} value={runeCost3} onChange={e => setRuneCost3(Number(e.target.value))} className="flex h-10 w-full rounded border text-[var(--mw-text-main)] bg-[var(--mw-card)] border-[var(--mw-border)] px-3 py-2 text-sm focus:border-[var(--mw-gold-primary)] outline-none" />
                 </div>
               )}
 
-              <div className="space-y-2 pt-4 border-t border-slate-700">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-amber-400">Preço Estimado de Venda (BM)</label>
-                <input type="number" min={0} value={bmPrice} onChange={e => setBmPrice(Number(e.target.value))} className="flex h-10 w-full rounded-md border text-slate-100 bg-slate-900 border-slate-700 px-3 py-2 text-sm focus:border-amber-500 outline-none" />
+              <div className="space-y-2 pt-4 border-t border-[var(--mw-border)] mt-4">
+                <label className="text-[10px] font-bold tracking-widest uppercase text-[var(--mw-gold-bright)]">Preço Estimado de Venda (BM)</label>
+                <input type="number" min={0} value={bmPrice} onChange={e => setBmPrice(Number(e.target.value))} className="flex h-10 w-full rounded border text-[var(--mw-gold-bright)] bg-[var(--mw-card)] border-[var(--mw-gold-dark)] px-3 py-2 text-sm focus:border-[var(--mw-gold-primary)] outline-none" />
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-               <div className="text-slate-400 text-sm mb-1">Custo Produção</div>
-               <div className="text-xl font-mono text-slate-200">{formatSilver(failureAdjustedCost)}</div>
+          <div className="bg-[var(--mw-bg)] p-6 rounded-xl border border-[var(--mw-border)] grid grid-cols-2 md:grid-cols-4 gap-6 text-center shadow-inner">
+            <div className="flex flex-col gap-1 items-center justify-center">
+               <div className="text-[var(--mw-text-muted)] text-[10px] uppercase font-bold tracking-widest mb-1">Custo Produção</div>
+               <div className="text-xl font-mono text-[var(--mw-text-main)] font-black">{formatSilver(failureAdjustedCost)}</div>
             </div>
-            <div>
-               <div className="text-slate-400 text-sm mb-1">Taxa BM (4.5%)</div>
-               <div className="text-xl font-mono text-red-400">-{formatSilver(bmTax)}</div>
+            <div className="flex flex-col gap-1 items-center justify-center border-l border-[var(--mw-border)]">
+               <div className="text-[var(--mw-text-muted)] text-[10px] uppercase font-bold tracking-widest mb-1">Taxa BM (4.5%)</div>
+               <div className="text-xl font-mono text-[var(--mw-red)] font-black">-{formatSilver(bmTax)}</div>
             </div>
-            <div>
-               <div className="text-slate-400 text-sm mb-1">Lucro Estimado</div>
-               <div className={`text-2xl font-black font-mono space-x-1 ${profit > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                 {formatSilver(profit)}
+            <div className="flex flex-col gap-1 items-center justify-center border-l border-[var(--mw-border)]">
+               <div className="text-[var(--mw-text-muted)] text-[10px] uppercase font-bold tracking-widest mb-1">Lucro Estimado</div>
+               <div className={`text-2xl font-black font-mono ${profit > 0 ? 'text-[var(--mw-green)] drop-shadow-sm' : 'text-[var(--mw-red)]'}`}>
+                 {profit > 0 ? '+' : ''}{formatSilver(profit)}
                </div>
             </div>
-            <div>
-               <div className="text-slate-400 text-sm mb-1">Margem Retorno</div>
-               <div className={`text-xl font-bold font-mono space-x-1 ${margin > 20 ? 'text-amber-400' : margin > 0 ? 'text-green-400' : 'text-red-500'}`}>
+            <div className="flex flex-col gap-1 items-center justify-center border-l border-[var(--mw-border)] relative">
+               <div className="text-[var(--mw-text-muted)] text-[10px] uppercase font-bold tracking-widest mb-1">Margem Retorno</div>
+               <div className={`text-xl font-bold font-mono ${margin > 20 ? 'text-[var(--mw-gold-bright)]' : margin > 0 ? 'text-[var(--mw-green)]' : 'text-[var(--mw-red)]'}`}>
                  {margin.toFixed(2)}%
                </div>
             </div>
