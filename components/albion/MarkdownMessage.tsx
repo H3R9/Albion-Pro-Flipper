@@ -1,6 +1,7 @@
 import React from 'react';
 import Markdown from 'react-markdown';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface MarkdownMessageProps {
   content: string;
@@ -36,7 +37,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
               ? <code className="bg-slate-900/80 text-emerald-400 px-1.5 py-0.5 rounded font-mono text-[0.85em] border border-slate-700 shadow-sm" {...props} />
               : <code className="block bg-[#0b0c10] text-emerald-400 p-4 rounded-xl font-mono text-[0.85em] overflow-x-auto border border-emerald-500/20 my-4 shadow-inner" {...props} />,
           a: ({node, ...props}: any) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4 font-medium transition-colors" target="_blank" rel="noreferrer" {...props} />,
-          img: ({node, ...props}: any) => <img alt={props.alt || ""} className="inline-block object-contain" width={40} height={40} style={{ display: 'inline', marginTop: '-4px', verticalAlign: 'middle', marginRight: '6px' }} {...props} />,
+          img: ({node, ...props}: any) => <Image src={props.src || ''} alt={props.alt || ""} className="inline-block object-contain" width={40} height={40} style={{ display: 'inline', marginTop: '-4px', verticalAlign: 'middle', marginRight: '6px' }} unoptimized />,
           table: ({node, ...props}: any) => <div className="overflow-x-auto my-5 rounded-lg border border-slate-700 bg-slate-900/50 shadow-md"><table className="w-full text-left border-collapse text-sm" {...props} /></div>,
           thead: ({node, ...props}: any) => <thead className="bg-[#0b0c10] text-slate-300 border-b border-slate-700 font-bold uppercase tracking-wider text-xs" {...props} />,
           th: ({node, ...props}: any) => <th className="p-3" {...props} />,

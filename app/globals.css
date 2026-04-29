@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --color-mw-bg: #0D0D0F;
+  --color-mw-card: #141418;
+  --color-mw-card-hover: #1A1A22;
+  --color-mw-border: #2A2A35;
+  --color-mw-gold-primary: #C9A84C;
+  --color-mw-gold-bright: #F0C040;
+  --color-mw-gold-dark: #8B6914;
+  --color-mw-green: #4CAF7D;
+  --color-mw-red: #E05252;
+  --color-mw-text-main: #E8E0D0;
+  --color-mw-text-muted: #8A8090;
+}
+
 @layer utilities {
   .scrollbar-hide {
     /* IE and Edge */
@@ -10,4 +24,21 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+}
+
+@keyframes coinFall {
+  0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(150px) rotate(360deg); opacity: 0; }
+}
+
+.coin-particle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: var(--mw-gold-bright);
+  border-radius: 50%;
+  box-shadow: inset 0 0 4px var(--mw-gold-dark), 0 0 8px rgba(240,192,64,0.5);
+  animation: coinFall linear infinite;
 }

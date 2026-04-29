@@ -7,6 +7,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { requestNotificationPermission, sendNotification } from '@/lib/alerts';
 import { LiveTimeAgo } from '@/components/albion/LiveTimeAgo';
+import Image from 'next/image';
 
 import { MaterialsAiChat } from './MaterialsAiChat';
 import { toast } from 'sonner';
@@ -298,7 +299,7 @@ export function MaterialsTracker() {
                         return (
                           <tr key={item.itemId} className="hover:bg-slate-800/40 transition">
                             <td className="p-4 pl-6 flex items-center gap-3">
-                              <img src={item.icon} alt={item.name} className="w-12 h-12 object-contain bg-slate-900/80 rounded block shadow-sm border border-slate-700" />
+                              <Image src={item.icon} alt={item.name} width={48} height={48} className="w-12 h-12 object-contain bg-slate-900/80 rounded block shadow-sm border border-slate-700" unoptimized referrerPolicy="no-referrer" />
                               <span className="font-bold text-slate-100 text-base"><span className="text-amber-500 mr-2 drop-shadow">T{item.tier}</span>{item.name}</span>
                             </td>
                             

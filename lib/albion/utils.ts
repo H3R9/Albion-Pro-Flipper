@@ -90,7 +90,11 @@ export function formatProfit(num: number) {
 
 export function formatSilver(num: number) {
   if (!num || num === 0) return '—';
-  return Math.floor(num).toLocaleString('pt-BR');
+  const val = Math.floor(Math.abs(num));
+  const prefix = num < 0 ? '-' : '';
+  if (val >= 1_000_000) return `${prefix}${(val / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}M ⚔️`;
+  if (val >= 1_000) return `${prefix}${(val / 1_000).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}k`;
+  return `${prefix}${val.toLocaleString('pt-BR')}`;
 }
 
 export function formatTimeAgo(dateStr: string | null) {
@@ -149,6 +153,10 @@ export function calculateProfit(buyPrice: number, sellPrice: number, sellTax = 4
 export function calculateMargin(buyPrice: number, profit: number) {
   if (!buyPrice || buyPrice <= 0) return 0;
   return (profit / buyPrice) * 100;
+}
+
+export function calculateNetProfit(grossProfit: number, sellPrice: number, tax: number = 0.045) {
+  return Math.floor(grossProfit - (sellPrice * tax));
 }
 
 export function calculateTax(sellPrice: number, taxRate = 4) {

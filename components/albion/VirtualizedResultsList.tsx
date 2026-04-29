@@ -1,25 +1,68 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { TradeCard } from '@/components/albion/TradeCard';
 import { TradeResult } from '@/lib/albion/types';
-import { Search } from 'lucide-react';
-
+import { Search, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/states/EmptyState';
 import { LoadingState } from '@/components/ui/states/LoadingState';
+import { scoreFlip } from '@/lib/albion/scoring';
+import { parseItemId } from '@/lib/albion/utils';
 
 export function VirtualizedResultsList({ 
   results, 
   isScanning, 
-  hasProgress 
+  hasProgress,
+  newPulseKeys
 }: { 
   results: TradeResult[]; 
   isScanning: boolean; 
-  hasProgress: boolean; 
+  hasProgress: boolean;
+  newPulseKeys?: Set<string>;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
+  const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
+  const [scoreFilter, setScoreFilter] = useState<'ALL' | 'EXECUTE' | 'EXECUTE_WATCH'>('ALL');
+
+  const scoredResults = useMemo(() => {
+    return results.map(r => {
+      if (r.flipScore) return r;
+      const { tier, enchant } = parseItemId(r.itemId);
+      const profit = r.adjustedProfit !== undefined ? r.adjustedProfit : r.profit;
+      const score = scoreFlip({
+        netProfit: profit,
+        dataAgeMinutes: r.worstAge,
+        buyPrice: r.buyPrice,
+        tier: `T${tier}`,
+        enchantment: enchant
+      });
+      return { ...r, flipScore: score };
+    });
+  }, [results]);
+
+  const filteredAndSortedResults = useMemo(() => {
+    let list = scoredResults;
+    
+    if (scoreFilter === 'EXECUTE') {
+      list = list.filter(r => r.flipScore?.recommendation === 'EXECUTE');
+    } else if (scoreFilter === 'EXECUTE_WATCH') {
+      list = list.filter(r => r.flipScore?.recommendation === 'EXECUTE' || r.flipScore?.recommendation === 'WATCH');
+    }
+
+    return list.sort((a, b) => {
+      const pA = a.flipScore?.totalScore || 0;
+      const pB = b.flipScore?.totalScore || 0;
+      return sortDirection === 'desc' ? pB - pA : pA - pB;
+    });
+  }, [scoredResults, sortDirection, scoreFilter]);
+
+  const maxProfit = useMemo(() => {
+    if (filteredAndSortedResults.length === 0) return 0;
+    return Math.max(...filteredAndSortedResults.map(r => r.adjustedProfit !== undefined ? r.adjustedProfit : r.profit));
+  }, [filteredAndSortedResults]);
 
   const rowVirtualizer = useVirtualizer({
-    count: results.length,
+    count: filteredAndSortedResults.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 140, // Altura estimada do card fechado
     overscan: 5,
@@ -50,10 +93,51 @@ export function VirtualizedResultsList({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 rounded-xl border border-[var(--mw-border)] bg-[var(--mw-bg)]/50 shadow-xl overflow-hidden">
+      {/* Sticky Table Header */}
+      <div className="flex flex-col md:flex-row items-center justify-between px-6 py-3 bg-[var(--mw-bg)]/80 backdrop-blur-md border-b border-[var(--mw-border)] z-10 sticky top-0 shadow-sm gap-4">
+        
+        {/* Quick Filters */}
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto shrink-0 scrollbar-hide pb-1 md:pb-0">
+          <button 
+            onClick={() => setScoreFilter('ALL')}
+            className={cn("px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors", scoreFilter === 'ALL' ? "bg-slate-800 text-slate-200" : "bg-transparent text-slate-500 hover:text-slate-300")}
+          >
+            Todos
+          </button>
+          <button 
+            onClick={() => setScoreFilter('EXECUTE_WATCH')}
+            className={cn("px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors", scoreFilter === 'EXECUTE_WATCH' ? "bg-[var(--mw-gold-bright)]/20 text-[var(--mw-gold-bright)] border border-[var(--mw-gold-bright)]/30" : "bg-transparent text-slate-500 hover:text-slate-300")}
+          >
+            EXECUTE + WATCH
+          </button>
+          <button 
+            onClick={() => setScoreFilter('EXECUTE')}
+            className={cn("px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors", scoreFilter === 'EXECUTE' ? "bg-[var(--mw-green)]/20 text-[var(--mw-green)] border border-[var(--mw-green)]/30" : "bg-transparent text-slate-500 hover:text-slate-300")}
+          >
+            Apenas EXECUTE
+          </button>
+        </div>
+
+        <div className="flex-1 hidden lg:block text-center text-xs font-bold text-[var(--mw-text-muted)] uppercase tracking-widest">
+          Rota de Arbitragem
+        </div>
+        <div className="w-full md:w-[160px] flex justify-end shrink-0">
+          <button 
+            onClick={() => setSortDirection(prev => prev === 'desc' ? 'asc' : 'desc')}
+            className="flex items-center justify-end gap-2 px-3 py-1.5 rounded bg-[var(--mw-card)] hover:bg-[var(--mw-card-hover)] text-[var(--mw-gold-primary)] border border-[var(--mw-border)] transition-all group w-full md:w-auto"
+          >
+            <span className="text-xs font-bold uppercase tracking-widest">Score</span>
+            <div className={cn("transition-transform duration-300", sortDirection === 'asc' ? "rotate-180" : "rotate-0")}>
+               <ArrowUpDown size={14} className="text-[var(--mw-gold-bright)] group-hover:scale-110 transition-transform" />
+            </div>
+          </button>
+        </div>
+      </div>
+
       <div 
         ref={parentRef} 
-        className="h-[800px] w-full overflow-auto rounded-lg border border-slate-800 bg-slate-900/20"
+        className="h-[750px] w-full overflow-auto scrollbar-hide relative"
       >
         <div
           style={{
@@ -63,7 +147,9 @@ export function VirtualizedResultsList({
           }}
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const res = results[virtualRow.index];
+            const res = filteredAndSortedResults[virtualRow.index];
+            const oppKey = `${res.itemId}-${res.sourceCity || res.baseCity}-${Math.floor(res.buyPrice / 1000)}`;
+            const rowIsEven = virtualRow.index % 2 === 0;
             return (
               <div
                 key={virtualRow.key}
@@ -76,17 +162,22 @@ export function VirtualizedResultsList({
                   width: '100%',
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
-                className="p-2"
+                className={cn("px-4 pb-3", rowIsEven ? "bg-transparent" : "bg-black/10")}
               >
-                <TradeCard result={res} index={virtualRow.index} />
+                <TradeCard 
+                  result={res} 
+                  index={virtualRow.index} 
+                  isNew={newPulseKeys?.has(oppKey)} 
+                  maxProfit={maxProfit} 
+                />
               </div>
             );
           })}
         </div>
       </div>
       {results.length > 100 && (
-        <div className="text-center p-4 text-xs font-bold text-slate-500 mt-4 bg-slate-900/50 rounded-md border border-slate-800">
-          Mostrando {results.length} resultados. Use filtros adicionais ou a barra de pesquisa se necessário.
+        <div className="text-center p-3 text-[10px] uppercase tracking-widest font-bold text-[var(--mw-text-muted)] bg-[var(--mw-card)]/50 border-t border-[var(--mw-border)]">
+          Mostrando os {results.length} melhores resultados ordenados por lucro.
         </div>
       )}
     </div>

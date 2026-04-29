@@ -37,27 +37,59 @@ export function MaterialsAiChat({ materialsData }: MaterialsAiChatProps) {
 
       const ai = new GoogleGenAI({ apiKey });
 
-      // Create a context summary from the data
-      const dataContext = materialsData.map(m => {
-        return `Item: ${m.name} (ID: ${m.itemId}, Tier: ${m.tier})
-Melhor Venda Direta Origin: ${m.bestDirectPrice < Infinity ? `${formatSilver(m.bestDirectPrice)} em ${m.bestDirectCity}` : 'Indisponível'}
-Melhor Pedido de Compra Origin: ${m.bestOrderPrice < Infinity ? `${formatSilver(m.bestOrderPrice)} em ${m.bestOrderCity}` : 'Indisponível'}
-Venda Direta Caerleon: ${m.caerleonSellPrice && m.caerleonSellPrice < Infinity ? formatSilver(m.caerleonSellPrice) : 'Indisponível'}
-Pedido de Compra Caerleon: ${m.caerleonBuyOrder && m.caerleonBuyOrder > 0 ? formatSilver(m.caerleonBuyOrder) : 'Indisponível'}
-`;
-      }).join('\n');
+      const dataContextRaw = {
+        timestamp: new Date().toISOString(),
+        serverRegion: "West (Américas/Europa)",
+        marketSnapshot: {
+          totalOpportunitiesFound: materialsData.length,
+          topItems: materialsData.slice(0, 20).map(m => {
+            const rawProfit = (m.caerleonSellPrice && m.caerleonSellPrice < Infinity && m.bestDirectPrice < Infinity) 
+                  ? m.caerleonSellPrice - m.bestDirectPrice 
+                  : 0;
+            const netProfit = rawProfit > 0 ? Math.floor(rawProfit - ((m.caerleonSellPrice || 0) * 0.045)) : 0;
+            return {
+              itemId: m.itemId,
+              itemName: m.name,
+              tier: m.tier,
+              buyCity: m.bestDirectCity,
+              buyPrice: m.bestDirectPrice < Infinity ? m.bestDirectPrice : null,
+              buyOrderPrice: m.bestOrderPrice < Infinity ? m.bestOrderPrice : null,
+              buyOrderCity: m.bestOrderCity,
+              sellPriceOrigin: m.caerleonSellPrice && m.caerleonSellPrice < Infinity ? m.caerleonSellPrice : null,
+              sellOrderOrigin: m.caerleonBuyOrder && m.caerleonBuyOrder > 0 ? m.caerleonBuyOrder : null,
+              grossProfit: rawProfit,
+              netProfit: netProfit
+            };
+          }).filter(x => x.buyPrice !== null)
+        }
+      };
 
-      const systemInstruction = `Você é um analista experiente de arbitragem e flip do Albion Online, especialista no Mercado Negro e no mercado de Caerleon.
-Sua função é aconselhar o jogador sobre as melhores cidades para comprar materiais de encantamento (Runas, Almas e Relíquias) nas Royal Cities e lucrar vendendo-os no mercado de Caerleon. Responda a perguntas como: "quais itens mais saem", "quais geram mais margem" e "melhor oportunidade de investimento a longo prazo".
+      const systemInstruction = `Você é ARIA (Albion Real-time Intelligence Analyst), uma IA especialista em economia de Albion Online com profundo conhecimento de:
+- Mecânicas de flipping no Black Market de Caerleon
+- Cálculo de ROI considerando: taxa do mercado (4.5% padrão), custo de viagem, risco de competição, e volatilidade de preços
+- Estratégias de encantamento (Runes, Souls, Relics) e quando vale o investimento
+- Timing de mercado: horários de pico (EU: 19h-23h, NA: 01h-04h UTC)
+- Categorias de itens mais lucrativas por tier
 
-DIRETRIZES DE FORMATAÇÃO:
-- Estruture a resposta com cabeçalhos (\`###\`) e tópicos claros.
-- Use **negrito** obrigatoriamente para destacar Preços, Nomes de Cidades e Nomes de Itens.
-- A resposta deve ser extremamente fácil de ler num piscar de olhos (use listas \`-\`).
-- Evite blocos de texto muito grandes ou parágrafos densos.
+Sua função é analisar OPORTUNIDADES COM MATERIAIS DE ENCANTAMENTO (Runas, Almas, Relíquias). 
+Quando receber dados de mercado, SEMPRE estruture sua análise assim:
 
-DADOS ATUAIS DO MERCADO:
-${dataContext}
+1. 🏆 TOP PICKS (máx 5): Itens com maior score combinado de lucro + viabilidade
+2. ⚠️ ALERTAS: Oportunidades que vão expirar logo (dados com idade alta)
+3. 📊 DIAGNÓSTICO DE MERCADO: Qual tier/material está aquecido hoje
+4. 💡 ESTRATÉGIA SUGERIDA: Rota específica de cidades para compra
+5. 🔢 MÉTRICAS: Lucro líquido estimado, capital recomendado
+
+Para cada item TOP PICK, forneça:
+- Nome do item e tier
+- Cidade de compra → Compensa transporte para Caerleon?
+- Lucro bruto → Lucro líquido (após taxa 4.5%)
+- Aviso de risco se aplicável
+
+NUNCA sugira flips sem subtrair a taxa do mercado (4.5%).
+
+DADOS ATUAIS DA PLATAFORMA (JSON):
+${JSON.stringify(dataContextRaw, null, 2)}
 `;
 
       const history = messages.map(msg => ({

@@ -17,20 +17,20 @@ import { Star, Route, BarChart2, Calculator, Check, Copy } from 'lucide-react';
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { LiveTimeAgo } from '@/components/albion/LiveTimeAgo';
+import { motion } from 'motion/react';
+import Image from 'next/image';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 function ageIndicator(ageMinutes: number) {
-  if (ageMinutes <= 10) return { cls: 'border-green-500', label: 'Muito recente' };
-  if (ageMinutes <= 30) return { cls: 'border-green-400', label: 'Recente' };
-  if (ageMinutes <= 60) return { cls: 'border-yellow-500', label: 'Aceitável' };
-  if (ageMinutes <= 120) return { cls: 'border-orange-500', label: 'Dados velhos' };
-  return { cls: 'border-red-500', label: 'Muito antigo' };
+  if (ageMinutes < 15) return { cls: 'border-green-500', bg: 'bg-[var(--mw-green)]', text: 'text-[var(--mw-green)]', label: '< 15 min (fresco)', tooltip: 'Dados muito recentes. Alta chance do preço ainda ser este.' };
+  if (ageMinutes <= 30) return { cls: 'border-[var(--mw-gold-bright)]', bg: 'bg-[var(--mw-gold-bright)]', text: 'text-[var(--mw-gold-bright)]', label: '15-30 min', tooltip: 'Dados com idade média. Oportunidade pode estar desaparecendo.' };
+  return { cls: 'border-[var(--mw-red)]', bg: 'bg-[var(--mw-red)]', text: 'text-[var(--mw-red)]', label: '> 30 min (velho)', tooltip: 'Risco altíssimo: Dados velhos. Confirme os preços no jogo antes de comprar.' };
 }
 
-export const TradeCard = React.memo(({ result, index }: { result: TradeResult; index: number }) => {
+export const TradeCard = React.memo(({ result, index, isNew, maxProfit }: { result: TradeResult; index: number, isNew?: boolean, maxProfit?: number }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
@@ -47,18 +47,26 @@ export const TradeCard = React.memo(({ result, index }: { result: TradeResult; i
   const p = parseItemId(result.itemId);
   const name = getItemFullName(result.itemId);
   const qi = getQualityInfo(result.quality);
-  const iconUrl = getItemIconUrl(result.itemId, result.quality, 64);
-  const tax = calculateTax(result.sellPrice * quantity, 4);
+  // User asked for size=40
+  const iconUrl = `https://render.albiononline.com/v1/item/${result.itemId}.png?size=40&quality=${result.quality}`;
+  const tax = calculateTax(result.sellPrice * quantity, 4.5);
 
   const buyAge = ageIndicator(result.cityAge);
   const sellAge = ageIndicator(result.bmAge);
+  const worstAge = result.worstAge || Math.max(result.cityAge, result.bmAge);
+  const overallAgeIndicator = ageIndicator(worstAge);
 
   const displayProfit = (result.adjustedProfit !== undefined ? result.adjustedProfit : result.profit) * quantity;
+  const isHotDeal = displayProfit > 100000 && worstAge < 10;
 
   const originCity = result.tradeType === 'enchant' ? (result.baseCity || 'Desconhecido') : result.sourceCity;
   const isRed = originCity !== 'Caerleon';
-  const routeColor = isRed ? 'bg-red-500/15 text-red-500 border-red-500/30' : 'bg-green-500/15 text-green-500 border-green-500/30';
+  const routeColor = isRed ? 'bg-[var(--mw-red)]/15 text-[var(--mw-red)] border-[var(--mw-red)]/30' : 'bg-[var(--mw-green)]/15 text-[var(--mw-green)] border-[var(--mw-green)]/30';
   const routeText = isRed ? '🔴 Zona Vermelha' : '🟢 Local (Caerleon, Seguro)';
+
+  const isWeapon = result.itemId.includes('_MAIN_') || result.itemId.includes('_2H_');
+  const isArmor = result.itemId.includes('_HEAD') || result.itemId.includes('_ARMOR') || result.itemId.includes('_SHOES');
+  const catColor = isWeapon ? 'border-l-[4px] border-l-[var(--mw-red)]' : isArmor ? 'border-l-[4px] border-l-blue-500' : 'border-l-[4px] border-l-[var(--mw-green)]';
 
   const renderSteps = () => {
     if (result.tradeType === 'buyorder') {
@@ -210,7 +218,29 @@ export const TradeCard = React.memo(({ result, index }: { result: TradeResult; i
   };
   
   return (
-    <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl flex flex-col transition-all duration-300 shadow-md hover:shadow-xl hover:border-slate-500/80 overflow-hidden text-sm relative mt-3 group backdrop-blur-sm">
+    <motion.div 
+      initial={{ x: 20, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ delay: Math.min(index * 0.05, 0.5), duration: 0.3 }}
+      className={cn(
+      "border rounded-xl flex flex-col transition-all duration-300 shadow-md hover:shadow-xl overflow-hidden text-sm relative mt-3 group backdrop-blur-sm",
+      catColor,
+      isHotDeal 
+        ? "bg-[var(--mw-card)]/90 border-[var(--mw-gold-bright)]/60 shadow-[0_0_20px_rgba(240,192,64,0.3)] hover:shadow-[0_0_25px_rgba(240,192,64,0.5)]" 
+        : "bg-[var(--mw-card)]/60 border-[var(--mw-border)] hover:bg-[var(--mw-card-hover)] hover:border-[var(--mw-gold-primary)]/40",
+      isNew && "animate-[pulse_1.5s_ease-in-out_3] border-[var(--mw-green)]/60 shadow-[0_0_15px_rgba(76,175,125,0.4)]"
+    )}>
+      <div className="absolute inset-0 pointer-events-none opacity-5" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(201,168,76,0.5) 2px, rgba(201,168,76,0.5) 4px)' }}></div>
+      {isHotDeal && (
+         <div className="absolute top-0 right-0 z-10 translate-x-1.5 -translate-y-1.5">
+           <span className="flex h-5 items-center gap-1">
+             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-30"></span>
+             <span className="relative inline-flex rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-[10px] font-black text-slate-950 px-2 py-0.5 shadow-lg border border-amber-300/50 uppercase tracking-widest whitespace-nowrap">
+               🔥 Hot Deal
+             </span>
+           </span>
+         </div>
+      )}
       <div 
         className="flex flex-col lg:flex-row lg:items-center p-4 cursor-pointer relative gap-4"
         onClick={() => setIsOpen(!isOpen)}
@@ -218,62 +248,85 @@ export const TradeCard = React.memo(({ result, index }: { result: TradeResult; i
         {/* ITEM IDENTITY */}
         <div className="flex items-center gap-4 lg:w-[35%] shrink-0">
           <div className="relative w-14 h-14 bg-gradient-to-br from-slate-800 to-slate-950 rounded-lg flex items-center justify-center border-2 shadow-inner" style={{ borderColor: qi.color }}>
-            <img src={iconUrl} alt={name} className="max-w-full max-h-full object-contain filter drop-shadow-md p-1" />
-            <span className="absolute -bottom-2 -right-2 text-[10px] font-black px-1.5 py-0.5 rounded shadow-md bg-slate-900 border border-slate-700 text-slate-100">
+            <Image src={iconUrl} alt={name} width={56} height={56} className="max-w-full max-h-full object-contain filter drop-shadow-md p-1" referrerPolicy="no-referrer" />
+            <span className="absolute -bottom-2 -right-2 text-[10px] font-black px-1.5 py-0.5 rounded shadow-md bg-[var(--mw-bg)] border border-[var(--mw-border)] text-[var(--mw-text-main)]">
               T{p.tier}.{p.enchant}
             </span>
+            
+            {result.flipScore && (
+              <div className="absolute -top-2 -left-2 w-7 h-7 rounded-full flex items-center justify-center shadow-lg border-2 z-10 font-bold text-[10px] cursor-help" 
+                   title={result.flipScore.reason}
+                   style={{
+                     backgroundColor: 'var(--mw-bg)',
+                     borderColor: result.flipScore.recommendation === 'EXECUTE' ? 'var(--mw-green)' : result.flipScore.recommendation === 'WATCH' ? 'var(--mw-gold-bright)' : 'var(--mw-red)',
+                     color: result.flipScore.recommendation === 'EXECUTE' ? 'var(--mw-green)' : result.flipScore.recommendation === 'WATCH' ? 'var(--mw-gold-bright)' : 'var(--mw-red)',
+                   }}>
+                {result.flipScore.totalScore}
+              </div>
+            )}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-slate-100 truncate w-full text-base" title={name}>{name}</span>
-            <div className="flex flex-wrap gap-2 text-[11px] text-slate-400 mt-1.5 items-center">
+            <span className="font-bold text-[var(--mw-text-main)] truncate w-full text-base" title={name}>{name}</span>
+            <div className="flex flex-wrap gap-2 text-[11px] text-[var(--mw-text-muted)] mt-1.5 items-center">
               <span className="font-semibold bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded shadow-sm" style={{ color: qi.color }}>{qi.namePT}</span>
               {p.enchant > 0 && <span className="font-semibold bg-purple-500/10 border border-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded shadow-sm">Encantamento {p.enchant}</span>}
               {result.volume24h !== undefined && (
                 <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center border shadow-sm", 
-                  result.volume24h >= 20 ? "bg-green-500/10 text-green-400 border-green-500/20" :
-                  result.volume24h >= 5 ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" : "bg-orange-500/10 text-orange-400 border-orange-500/20"
+                  result.volume24h >= 20 ? "bg-[var(--mw-green)]/10 text-[var(--mw-green)] border-[var(--mw-green)]/20" :
+                  result.volume24h >= 5 ? "bg-[var(--mw-gold-bright)]/10 text-[var(--mw-gold-bright)] border-[var(--mw-gold-bright)]/20" : "bg-orange-500/10 text-orange-400 border-orange-500/20"
                 )}>
                   {result.volume24h >= 20 ? '🔥' : result.volume24h >= 5 ? '⚡' : '💤'} Vendas/24h: {result.volume24h}
                 </span>
               )}
             </div>
+            {/* INLINE OVERALL AGE INDICATOR */}
+            <div className="flex mt-2 items-center gap-1 cursor-help" title={overallAgeIndicator.tooltip}>
+               <span className="text-[10px] text-[var(--mw-text-muted)] uppercase font-bold tracking-wider mr-1">Idade:</span>
+               <div className={cn("w-2 h-2 rounded-full", overallAgeIndicator.bg)}></div>
+               <span className={cn("text-[10px] font-bold uppercase", overallAgeIndicator.text)}>{overallAgeIndicator.label}</span>
+            </div>
           </div>
         </div>
 
         {/* CITIES & PRICES */}
-        <div className="flex-1 flex flex-row items-center justify-between lg:justify-center gap-6 lg:gap-8 bg-slate-900/40 rounded-lg p-3 border border-slate-800/50">
+        <div className="flex-1 flex flex-row items-center justify-between lg:justify-center gap-6 lg:gap-8 bg-[var(--mw-bg)]/40 rounded-lg p-3 border border-[var(--mw-border)]/50">
           <div className="flex flex-col">
-            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Mercado de Origem</span>
+            <span className="text-[10px] text-[var(--mw-text-muted)] uppercase font-bold tracking-wider mb-1">Mercado de Origem</span>
             <div className="flex items-center gap-2">
                <span className={cn("text-xs font-bold px-2 py-0.5 rounded border shadow-sm truncate max-w-[120px]", routeColor)} title={originCity}>{originCity}</span>
             </div>
-            <div className="text-slate-300 font-mono font-bold mt-1 text-sm">{formatPrice(result.buyPrice)}</div>
+            <div className="text-[var(--mw-text-main)] font-mono font-bold mt-1 text-sm">{formatPrice(result.buyPrice)}</div>
           </div>
           
           <div className="flex flex-col items-center justify-center">
-            <Route size={16} className="text-slate-500 hidden sm:block" />
-            <div className="h-px w-8 bg-slate-600 my-1 hidden sm:block"></div>
-            <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 rounded">{routeText.split(' ')[0]}</span>
+            <Route size={16} className="text-[var(--mw-text-muted)] hidden sm:block" />
+            <div className="h-px w-8 bg-[var(--mw-border)] my-1 hidden sm:block"></div>
+            <span className="text-[10px] bg-[var(--mw-bg)] text-[var(--mw-text-muted)] px-1.5 rounded">{routeText.split(' ')[0]}</span>
           </div>
 
           <div className="flex flex-col items-end">
-            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Destino (Venda)</span>
+            <span className="text-[10px] text-[var(--mw-text-muted)] uppercase font-bold tracking-wider mb-1">Destino (Venda)</span>
             <div className="flex items-center gap-2">
-               <span className="text-xs font-bold px-2 py-0.5 rounded border shadow-sm bg-slate-950 text-amber-500 border-slate-800">Black Market</span>
+               <span className="text-xs font-bold px-2 py-0.5 rounded border shadow-sm bg-[var(--mw-bg)] text-[var(--mw-gold-bright)] border-[var(--mw-border)]">Black Market</span>
             </div>
-            <div className="text-amber-400 font-mono font-bold mt-1 text-sm">{formatPrice(result.sellPrice)}</div>
+            <div className="text-[var(--mw-gold-bright)] font-mono font-bold mt-1 text-sm">{formatPrice(result.sellPrice)}</div>
           </div>
         </div>
 
         {/* PROFIT & MARGIN */}
-        <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between w-full lg:w-[160px] shrink-0 border-t lg:border-t-0 border-slate-700/50 pt-3 lg:pt-0">
-          <div className="flex flex-col lg:items-end">
-             <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Lucro Líquido Estimado</span>
-             <span className={cn("font-black text-xl lg:text-2xl leading-none drop-shadow-md", displayProfit >= 0 ? "text-green-400" : "text-red-400")}>
-               {displayProfit >= 0 ? '+' : ''}{formatProfit(Math.floor(displayProfit))}
+        <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between w-full lg:w-[160px] shrink-0 border-t lg:border-t-0 border-[var(--mw-border)]/50 pt-3 lg:pt-0">
+          <div className="flex flex-col lg:items-end w-full relative">
+             <span className="text-[10px] text-[var(--mw-text-muted)] uppercase font-bold tracking-wider mb-1">Lucro Líquido Estimado</span>
+             <span className={cn("font-black text-2xl lg:text-3xl leading-none drop-shadow-md", displayProfit >= 0 ? "text-[var(--mw-gold-bright)]" : "text-[var(--mw-red)]")}>
+               {formatSilver(Math.floor(displayProfit))}
              </span>
+             {maxProfit && maxProfit > 0 && displayProfit > 0 && (
+               <div className="w-full lg:w-32 h-1.5 bg-[var(--mw-bg)]/80 rounded-full mt-2 overflow-hidden border border-[var(--mw-border)]/50 shadow-inner float-right">
+                 <div className="h-full bg-gradient-to-r from-[var(--mw-gold-dark)] to-[var(--mw-gold-bright)] rounded-full" style={{ width: `${Math.min(100, Math.max(0, (displayProfit / maxProfit) * 100))}%` }}></div>
+               </div>
+             )}
           </div>
-          <div className={cn("font-mono text-xs font-bold bg-slate-900 px-2 py-1 rounded shadow-inner mt-2", result.margin >= 30 ? "text-emerald-400 border border-emerald-500/20" : "text-slate-300 border border-slate-700")}>
+          <div className={cn("font-mono text-xs font-bold bg-[var(--mw-bg)] px-2 py-1 rounded shadow-inner mt-2", result.margin >= 30 ? "text-[var(--mw-green)] border border-[var(--mw-green)]/20" : "text-[var(--mw-text-main)] border border-[var(--mw-border)]")}>
             {result.margin.toFixed(1)}% de Margem
           </div>
         </div>
@@ -404,7 +457,7 @@ export const TradeCard = React.memo(({ result, index }: { result: TradeResult; i
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 });
 

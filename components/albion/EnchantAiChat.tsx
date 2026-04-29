@@ -39,28 +39,62 @@ export function EnchantAiChat({ results, settings }: EnchantAiChatProps) {
 
       const ai = new GoogleGenAI({ apiKey });
 
-      // Create a context summary from the top 50 results
-      const dataContext = results.slice(0, 50).map(r => {
-        return `Oportunidade: Encantar ${getItemFullName(r.baseId || r.itemId)} para ${getItemFullName(r.itemId)} (Qualidade ${r.quality})
-Item Base/Flat a comprar: ${r.baseMethod} em ${r.baseCity} por ${formatSilver(r.baseCost || 0)}
-Materiais: ${r.runesRequired?.map(rune => `Comprar ${rune.amount}x ${getItemFullName(rune.id)} por ${formatSilver(rune.price)} (${rune.method} em ${rune.city})`).join(', ')}
-Venda no Black Market: ${formatSilver(r.sellPrice)}
-Lucro Estimado: ${formatSilver(r.profit)} (${r.margin}%)
-`;
-      }).join('\n');
+      const dataContextRaw = {
+        timestamp: new Date().toISOString(),
+        serverRegion: "West (Américas/Europa)",
+        marketSnapshot: {
+          totalOpportunitiesFound: results.length,
+          config: {
+            maxAgeMinutes: settings.maxAge,
+            minMargin: settings.minMargin,
+            minProfit: settings.minProfit,
+          },
+          topItems: results.slice(0, 15).map(r => ({
+            itemId: r.itemId,
+            itemName: getItemFullName(r.itemId),
+            quality: r.quality,
+            baseCost: r.baseCost,
+            baseCity: r.baseCity,
+            baseMethod: r.baseMethod,
+            runesCost: r.runesRequired?.reduce((acc, rune) => acc + (rune.price * rune.amount), 0) || 0,
+            sellPrice: r.sellPrice,
+            grossProfit: r.profit,
+            netProfit: Math.floor(r.profit - (r.sellPrice * 0.045)),
+            margin: r.margin,
+            dataAgeMinutes: r.worstAge,
+            runeDetails: r.runesRequired,
+            score: r.flipScore?.totalScore || 'N/A',
+            recommendation: r.flipScore?.recommendation || 'N/A'
+          }))
+        }
+      };
 
-      const systemInstruction = `Você é um estrategista do Mercado Negro (Black Market) de Albion Online. O jogador quer saber quais itens "flat" (.0) ou pouco encantados ele deve armar pedidos de compra agora (durante a madrugada).
+      const systemInstruction = `Você é ARIA (Albion Real-time Intelligence Analyst), uma IA especialista em economia de Albion Online com profundo conhecimento de:
+- Mecânicas de flipping no Black Market de Caerleon
+- Cálculo de ROI considerando: taxa do mercado (4.5% padrão), custo de viagem, risco de competição, e volatilidade de preços
+- Estratégias de encantamento (Runes, Souls, Relics) e quando vale o investimento
+- Timing de mercado: horários de pico (EU: 19h-23h, NA: 01h-04h UTC)
+- Categorias de itens mais lucrativas por tier
 
-AVISO IMPORTANTE SOBRE DADOS FALTANTES: Se o usuário notar a falta de certos itens do seu interesse (como Capotes Reais, Armaduras Reais, Brumário/Mistcaller, ou outros Off-hands), EXPLIQUE a ele que as configurações de Filtro dele estão as seguintes: "Idade Máxima dos Dados: ${settings.maxAge} min" e "Margem Mínima: ${settings.minMargin}%". Se a API do Albion Data Project não tiver reportado atualizações para esses itens nas últimas \`${settings.maxAge}\` horas, ou se a margem for muito baixa, eles ficaram de fora da tabela da interface. Explique que o jogador deve aumentar o maxAge (Tempo) na interface do usuário para aparecerem mais itens "antigos" (menos transacionados).
+Quando receber dados de mercado, SEMPRE estruture sua análise assim:
 
-DIRETRIZES DE FORMATAÇÃO:
-- Separe sua reposta em tópicos e seções curtas (ex: use **Oportunidade 1:**).
-- Use negrito (\`**\`) para destacar o nome de todos os itens e preços (Prata).
-- Organize os passos como listas pontuadas ou numeradas.
-- Seja objetivo e vá direto ao ponto, priorizando a legibilidade. Divirta-se um pouco adotando a persona de um goblin mercador calculista se quiser, mas mantenha a clareza. Use blocos de código ou emojis onde achar que melhore a leitura.
+1. 🏆 TOP PICKS (máx 5): Itens com maior score combinado de lucro + viabilidade
+2. ⚠️ ALERTAS: Oportunidades que vão expirar logo (dados com idade > 20min)
+3. 📊 DIAGNÓSTICO DE MERCADO: Qual categoria está aquecida hoje
+4. 💡 ESTRATÉGIA SUGERIDA: Rota específica de cidades para maximizar o dia
+5. 🔢 MÉTRICAS: ROI%, lucro/hora estimado, capital mínimo recomendado
 
-DADOS DE OPORTUNIDADES ATUAIS:
-${dataContext}
+Para cada item TOP PICK, forneça:
+- Nome do item e tier/encantamento
+- Cidade de compra → Cidade de venda
+- Lucro bruto → Lucro líquido (após taxa 4.5%)
+- Score de confiança (1-10) baseado na idade dos dados
+- Aviso de risco se aplicável
+
+NUNCA sugira flips sem calcular o lucro líquido real. NUNCA ignore a taxa do mercado nos cálculos.
+
+DADOS REAIS DA PLATAFORMA EM JSON A SEREM ANALISADOS:
+${JSON.stringify(dataContextRaw, null, 2)}
 `;
 
       const history = messages.map(msg => ({

@@ -1,3 +1,5 @@
+import type { FlipScore } from './scoring';
+
 export interface ScanSettings {
   maxAge: number;
   minProfit: number;
@@ -63,6 +65,7 @@ export interface TradeResult {
   adjustedProfit: number;
   routeZone: string;
   volume24h?: number;
+  flipScore?: FlipScore;
 
   baseId?: string;
   runesRequired?: EnchantRequired[];
@@ -79,6 +82,7 @@ export interface TradeResult {
   scenarios?: EnchantScenario[];
   
   trendData?: unknown;
+  isNew?: boolean;
 }
 
 export interface EnchantMaterial {
@@ -98,7 +102,7 @@ export interface ScanProgress {
   text: string;
 }
 
-export type ScanTab = 'mats' | 'enchant' | 'planner' | 'reports' | 'calc' | 'black' | 'royal' | 'buyorders';
+export type ScanTab = 'dashboard' | 'mats' | 'enchant' | 'planner' | 'reports' | 'calc' | 'black' | 'royal' | 'buyorders';
 
 // Added this to export MarketData as well, since it's closely related and avoids duplicate type definitions later.
 export interface MarketData {
