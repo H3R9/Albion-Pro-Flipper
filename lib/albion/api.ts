@@ -14,6 +14,24 @@ export function getApiBase() {
   return API_BASES[currentServer] || API_BASES.americas;
 }
 
+let activeRequest: Promise<void> = Promise.resolve();
+
+async function fetchWithMutex(url: string, init?: RequestInit): Promise<Response> {
+  let resolveNext: () => void;
+  const nextRequest = new Promise<void>((r) => { resolveNext = r; });
+  const currentRequest = activeRequest;
+  activeRequest = nextRequest;
+  
+  await currentRequest.catch(() => {});
+  
+  try {
+    return await fetch(url, init);
+  } finally {
+    // Release the mutex after 200ms to spread out the requests globally
+    setTimeout(resolveNext!, 200);
+  }
+}
+
 async function fetchWithRetry(url: string, retries = 3, delayMs = 1500, signal?: AbortSignal): Promise<Response> {
   const maxDelay = 30000;
   
@@ -21,7 +39,7 @@ async function fetchWithRetry(url: string, retries = 3, delayMs = 1500, signal?:
     try {
       if (signal?.aborted) throw new Error('Aborted');
       
-      const response = await fetch(url, { signal });
+      const response = await fetchWithMutex(url, { signal });
       
       // No retry for 400, 401, 403, 404
       if ([400, 401, 403, 404].includes(response.status)) {

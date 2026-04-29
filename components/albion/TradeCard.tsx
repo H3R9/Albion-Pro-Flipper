@@ -248,7 +248,7 @@ export const TradeCard = React.memo(({ result, index, isNew, maxProfit }: { resu
         {/* ITEM IDENTITY */}
         <div className="flex items-center gap-4 lg:w-[35%] shrink-0">
           <div className="relative w-14 h-14 bg-gradient-to-br from-slate-800 to-slate-950 rounded-lg flex items-center justify-center border-2 shadow-inner" style={{ borderColor: qi.color }}>
-            <Image src={iconUrl} alt={name} width={56} height={56} className="max-w-full max-h-full object-contain filter drop-shadow-md p-1" referrerPolicy="no-referrer" />
+            <Image src={iconUrl} alt={name} width={56} height={56} className="max-w-full max-h-full object-contain filter drop-shadow-md p-1" referrerPolicy="no-referrer" priority unoptimized />
             <span className="absolute -bottom-2 -right-2 text-[10px] font-black px-1.5 py-0.5 rounded shadow-md bg-[var(--mw-bg)] border border-[var(--mw-border)] text-[var(--mw-text-main)]">
               T{p.tier}.{p.enchant}
             </span>
