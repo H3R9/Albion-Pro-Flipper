@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
-import { MaterialsTracker } from '@/components/albion/MaterialsTracker';
-import { EnchantAiChat } from '@/components/albion/EnchantAiChat';
+import React, { useState, lazy, Suspense } from 'react';
 import { Dashboard } from '@/components/albion/Dashboard';
-import { InventoryPlanner } from '@/components/albion/InventoryPlanner';
-import { SavedReports } from '@/components/albion/SavedReports';
-import { CraftingCalculator } from '@/components/albion/CraftingCalculator';
 import { PARENT_CATEGORIES, CATEGORIES, getAllItemIds } from '@/lib/albion/items';
-import { Box, TrendingUp, Clock, MapPin, Wallet, Menu, X, LayoutDashboard, ShoppingCart, Crosshair, PackageOpen, FileText, Calculator, Home, Hammer, Settings } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Crosshair, PackageOpen, FileText, Calculator, Home, Hammer, Settings } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { QuickMetrics } from '@/components/layout/QuickMetrics';
 import { cn } from "@/lib/utils";
 import { VirtualizedResultsList } from '@/components/albion/VirtualizedResultsList';
 import { useScanLogic } from '@/hooks/useScanLogic';
@@ -16,9 +13,28 @@ import { ScanFiltersTopBar } from '@/components/scan/ScanFilters';
 import { useHotkeys } from '@/hooks/useHotkeys';
 import { useSessionStats } from '@/hooks/useSessionStats';
 import { ArenaMenu } from '@/components/ArenaMenu';
-import { IslandDashboard } from '@/components/island/IslandDashboard';
-import { formatSilver } from '@/lib/albion/utils';
-import { SettingsDashboard } from '@/components/settings/SettingsDashboard';
+import { EnchantAiChat } from '@/components/albion/EnchantAiChat';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { TradeCardSkeletonList } from '@/components/ui/Skeleton';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+import type { ScanTab } from '@/lib/albion/types';
+
+// Lazy-loaded heavy modules (only loaded when user navigates to them)
+const MaterialsTracker = lazy(() => import('@/components/albion/MaterialsTracker').then(m => ({ default: m.MaterialsTracker })));
+const InventoryPlanner = lazy(() => import('@/components/albion/InventoryPlanner').then(m => ({ default: m.InventoryPlanner })));
+const SavedReports = lazy(() => import('@/components/albion/SavedReports').then(m => ({ default: m.SavedReports })));
+const CraftingCalculator = lazy(() => import('@/components/albion/CraftingCalculator').then(m => ({ default: m.CraftingCalculator })));
+const IslandDashboard = lazy(() => import('@/components/island/IslandDashboard').then(m => ({ default: m.IslandDashboard })));
+const SettingsDashboard = lazy(() => import('@/components/settings/SettingsDashboard').then(m => ({ default: m.SettingsDashboard })));
+
+const LazyFallback = () => (
+  <div className="flex items-center justify-center py-20">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-[var(--mw-gold-primary)] border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs text-[var(--mw-text-muted)] uppercase tracking-widest font-bold">Carregando módulo...</span>
+    </div>
+  </div>
+);
 
 export default function HomeContent() {
   const [appMode, setAppMode] = useState<'hub' | 'operations' | 'island' | 'settings'>('hub');
@@ -36,29 +52,26 @@ export default function HomeContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { refreshes, stats, isNewRecord } = useSessionStats(results, isScanning);
 
+  // Hotkeys
   useHotkeys('enter', () => {
     if (!isScanning && isConfigValid && appMode === 'operations') handleScan();
-  }, true); // Ctrl + Enter
-
-  // ... (hotkeys logic unchanged, just add them)
+  }, true);
   useHotkeys('k', () => {
     if (appMode !== 'operations') return;
     const el = document.getElementById('search-input');
     if (el) el.focus();
-  }, true); // Ctrl + K
-
+  }, true);
   useHotkeys('1', () => appMode === 'operations' && setCurrentTab('dashboard'));
   useHotkeys('2', () => appMode === 'operations' && setCurrentTab('mats'));
   useHotkeys('3', () => appMode === 'operations' && setCurrentTab('enchant'));
   useHotkeys('4', () => appMode === 'operations' && setCurrentTab('planner'));
   useHotkeys('5', () => appMode === 'operations' && setCurrentTab('reports'));
   useHotkeys('6', () => appMode === 'operations' && setCurrentTab('calc'));
-
-  useHotkeys('escape', (e) => {
+  useHotkeys('escape', () => {
     if (document.activeElement && 'blur' in document.activeElement) {
-        (document.activeElement as HTMLElement).blur();
+      (document.activeElement as HTMLElement).blur();
     }
-  }); // Escape
+  });
 
   const opsNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
@@ -75,12 +88,13 @@ export default function HomeContent() {
 
   const handleSelectModule = (module: 'operations' | 'island' | 'settings') => {
     setAppMode(module);
-    if (module === 'island') setCurrentTab('island-dashboard' as any);
-    if (module === 'operations' && (currentTab as any) === 'island-dashboard') setCurrentTab('dashboard');
+    if (module === 'island') setCurrentTab('island-dashboard' as ScanTab);
+    if (module === 'operations' && (currentTab as string) === 'island-dashboard') setCurrentTab('dashboard');
   };
 
   const activeNavItems = appMode === 'island' ? islandNavItems : (appMode === 'settings' ? [] : opsNavItems);
 
+  // ═══ HUB MODE ═══
   if (appMode === 'hub') {
     return (
       <div className="font-sans">
@@ -89,70 +103,20 @@ export default function HomeContent() {
     );
   }
 
+  // ═══ MAIN APP ═══
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--mw-bg)] font-sans">
-      
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-[var(--mw-card)] border-r border-[var(--mw-border)] transition-transform duration-300 md:translate-x-0 md:static md:shrink-0 flex flex-col",
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-[var(--mw-border)]">
-          <div className="flex items-center gap-2">
-            <div className="p-1 rounded bg-[var(--mw-gold-primary)]/10">
-              <Box size={24} className="text-[var(--mw-gold-bright)]" />
-            </div>
-            <h1 className="font-black text-sm uppercase tracking-widest text-[var(--mw-text-main)]">
-              Aureus <span className="text-[var(--mw-gold-bright)]">Analytics</span>
-            </h1>
-          </div>
-          <button className="md:hidden text-[var(--mw-text-muted)] hover:text-white" onClick={() => setIsSidebarOpen(false)}>
-            <X size={20} />
-          </button>
-        </div>
+      <Sidebar
+        appMode={appMode}
+        currentTab={currentTab}
+        setCurrentTab={setCurrentTab}
+        isScanning={isScanning}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+        setAppMode={setAppMode}
+        navItems={activeNavItems}
+      />
 
-        <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-2">
-          {activeNavItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setCurrentTab(item.id as any);
-                setIsSidebarOpen(false);
-              }}
-              disabled={isScanning}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold tracking-wide transition-all",
-                currentTab === item.id 
-                  ? "bg-[var(--mw-gold-primary)]/10 text-[var(--mw-gold-bright)] border border-[var(--mw-gold-primary)]/20 shadow-sm" 
-                  : "text-[var(--mw-text-muted)] hover:bg-[var(--mw-card-hover)] hover:text-[var(--mw-text-main)] border border-transparent"
-              )}
-            >
-              <div className={cn("transition-colors", currentTab === item.id ? "text-[var(--mw-gold-bright)]" : "text-[var(--mw-text-muted)]")}>{item.icon}</div>
-              {item.label}
-            </button>
-          ))}
-        </div>
-        
-        <div className="p-4 border-t border-[var(--mw-border)]">
-           <button 
-             onClick={() => setAppMode('hub')}
-             className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-[var(--mw-bg)] hover:bg-[var(--mw-card-hover)] border border-[var(--mw-border)] text-[var(--mw-text-main)] text-xs font-bold uppercase tracking-wider transition-colors mb-4"
-           >
-             <Home size={16} />
-             Voltar à Arena
-           </button>
-           <div className="p-4 bg-[var(--mw-bg)] rounded-xl border border-[var(--mw-border)]/50 relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-16 h-16 bg-[var(--mw-gold-primary)]/10 rounded-full blur-xl"></div>
-             <p className="text-[10px] font-bold text-[var(--mw-gold-dark)] uppercase tracking-widest mb-1">Status do Sistema</p>
-             <div className="flex items-center gap-2 text-xs font-mono text-[var(--mw-text-main)]">
-               <span className="w-2 h-2 rounded-full bg-[var(--mw-green)] shadow-[0_0_8px_rgba(76,175,125,0.6)] animate-pulse"></span>
-               Mercado Ativo
-             </div>
-           </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <Header 
           alertsEnabled={alertsEnabled} 
@@ -167,34 +131,42 @@ export default function HomeContent() {
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-hide">
           <div className="max-w-7xl mx-auto w-full h-full">
-            {appMode === 'settings' ? (
+            
+            {/* Settings Module */}
+            {appMode === 'settings' && (
               <div className="w-full h-full">
-                <div className="mb-4">
-                  <button 
-                    onClick={() => setAppMode('hub')}
-                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--mw-text-muted)] hover:text-[var(--mw-text-main)] transition-colors"
-                  >
-                    ← Voltar à Arena
-                  </button>
-                </div>
-                <SettingsDashboard alertSettings={alertSettings} setAlertSettings={setAlertSettings} />
+                <button onClick={() => setAppMode('hub')} className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--mw-text-muted)] hover:text-[var(--mw-text-main)] transition-colors mb-4">
+                  ← Voltar à Arena
+                </button>
+                <ErrorBoundary>
+                  <Suspense fallback={<LazyFallback />}>
+                    <SettingsDashboard alertSettings={alertSettings} setAlertSettings={setAlertSettings} />
+                  </Suspense>
+                </ErrorBoundary>
               </div>
-            ) : appMode === 'island' ? (
+            )}
+
+            {/* Island Module */}
+            {appMode === 'island' && (
               <div className="w-full h-full">
-                <div className="mb-4">
-                  <button 
-                    onClick={() => setAppMode('hub')}
-                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--mw-text-muted)] hover:text-[var(--mw-text-main)] transition-colors"
-                  >
-                    ← Voltar à Arena
-                  </button>
-                </div>
-                <IslandDashboard />
+                <button onClick={() => setAppMode('hub')} className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--mw-text-muted)] hover:text-[var(--mw-text-main)] transition-colors mb-4">
+                  ← Voltar à Arena
+                </button>
+                <ErrorBoundary>
+                  <Suspense fallback={<LazyFallback />}>
+                    <IslandDashboard />
+                  </Suspense>
+                </ErrorBoundary>
               </div>
-            ) : (
+            )}
+
+            {/* Operations Module */}
+            {appMode === 'operations' && (
               <>
                 {currentTab === 'dashboard' && (
-                   <Dashboard stats={stats} refreshes={refreshes} isNewRecord={isNewRecord} />
+                  <ErrorBoundary>
+                    <Dashboard stats={stats} refreshes={refreshes} isNewRecord={isNewRecord} />
+                  </ErrorBoundary>
                 )}
 
                 {currentTab === 'enchant' && (
@@ -212,73 +184,42 @@ export default function HomeContent() {
                 )}
 
                 <div className={cn(currentTab !== 'mats' && "hidden")}>
-                  <MaterialsTracker />
+                  <ErrorBoundary>
+                    <Suspense fallback={<LazyFallback />}>
+                      <MaterialsTracker />
+                    </Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 <div className={cn(currentTab !== 'planner' && "hidden")}>
-                  <InventoryPlanner results={results} settings={uiSettings} />
+                  <ErrorBoundary>
+                    <Suspense fallback={<LazyFallback />}>
+                      <InventoryPlanner results={results} settings={uiSettings} />
+                    </Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 <div className={cn(currentTab !== 'reports' && "hidden")}>
-                  <SavedReports />
+                  <ErrorBoundary>
+                    <Suspense fallback={<LazyFallback />}>
+                      <SavedReports />
+                    </Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 <div className={cn(currentTab !== 'calc' && "hidden")}>
-                  <CraftingCalculator />
+                  <ErrorBoundary>
+                    <Suspense fallback={<LazyFallback />}>
+                      <CraftingCalculator />
+                    </Suspense>
+                  </ErrorBoundary>
                 </div>
 
                 <div className={cn(currentTab !== 'enchant' && "hidden")}>
                   <div className="flex flex-col gap-6 relative">
-                    
-                    {/* Quick Metrics */}
                     {filteredResults.length > 0 && !isScanning && (
-                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
-                         <div className="bg-[var(--mw-card)] border border-[var(--mw-border)] rounded-xl p-4 flex items-center gap-4 shadow-sm hover:border-[var(--mw-gold-dark)]/50 transition-colors">
-                           <div className="w-10 h-10 rounded-lg bg-[var(--mw-gold-dark)]/10 text-[var(--mw-gold-bright)] flex items-center justify-center shrink-0 border border-[var(--mw-gold-bright)]/20"><Wallet size={20} /></div>
-                           <div>
-                             <p className="text-[10px] uppercase tracking-wider text-[var(--mw-text-muted)] font-bold mb-0.5">Maior Lucro Agora</p>
-                             <p className="font-mono text-base font-bold text-[var(--mw-gold-bright)]">{formatSilver(Math.max(...filteredResults.map(r => r.adjustedProfit ?? r.profit)))}</p>
-                           </div>
-                         </div>
-                         <div className="bg-[var(--mw-card)] border border-[var(--mw-border)] rounded-xl p-4 flex items-center gap-4 shadow-sm hover:border-[var(--mw-green)]/50 transition-colors">
-                           <div className="w-10 h-10 rounded-lg bg-[var(--mw-green)]/10 text-[var(--mw-green)] flex items-center justify-center shrink-0 border border-[var(--mw-green)]/20"><TrendingUp size={20} /></div>
-                           <div>
-                             <p className="text-[10px] uppercase tracking-wider text-[var(--mw-text-muted)] font-bold mb-0.5">ROI Médio (Top 10)</p>
-                             <p className="font-mono text-base font-bold text-[var(--mw-green)]">
-                               {(() => {
-                                 const top10 = filteredResults.slice().sort((a,b) => (b.adjustedProfit??b.profit) - (a.adjustedProfit??a.profit)).slice(0, 10);
-                                 const avg = top10.reduce((acc, r) => acc + (r.buyPrice > 0 ? ((r.adjustedProfit??r.profit)/r.buyPrice)*100 : 0), 0) / (top10.length || 1);
-                                 return avg.toFixed(1) + '%';
-                               })()}
-                             </p>
-                           </div>
-                         </div>
-                         <div className="bg-[var(--mw-card)] border border-[var(--mw-border)] rounded-xl p-4 flex items-center gap-4 shadow-sm hover:border-blue-500/50 transition-colors">
-                           <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20"><Clock size={20} /></div>
-                           <div>
-                             <p className="text-[10px] uppercase tracking-wider text-[var(--mw-text-muted)] font-bold mb-0.5">Oport. Frescas</p>
-                             <p className="font-mono text-base font-bold text-blue-400">{filteredResults.filter(r => r.worstAge < 15).length} items &lt;15m</p>
-                           </div>
-                         </div>
-                         <div className="bg-[var(--mw-card)] border border-[var(--mw-border)] rounded-xl p-4 flex items-center gap-4 shadow-sm hover:border-purple-500/50 transition-colors">
-                           <div className="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20"><MapPin size={20} /></div>
-                           <div>
-                             <p className="text-[10px] uppercase tracking-wider text-[var(--mw-text-muted)] font-bold mb-0.5">Melhor Cidade (Top 10)</p>
-                             <p className="font-sans text-base font-bold text-[var(--mw-text-main)] truncate max-w-[120px]">
-                               {(() => {
-                                  const top10 = filteredResults.slice().sort((a,b) => (b.adjustedProfit??b.profit) - (a.adjustedProfit??a.profit)).slice(0, 10);
-                                  const counts: Record<string, number> = {};
-                                  top10.forEach(r => { const c = r.sourceCity || r.baseCity || 'ND'; counts[c] = (counts[c]||0)+1; });
-                                  let top = '-'; let max = 0;
-                                  for(const [c, cnt] of Object.entries(counts)) { if(cnt>max){max=cnt;top=c;} }
-                                  return top;
-                               })()}
-                             </p>
-                           </div>
-                         </div>
-                       </div>
+                      <QuickMetrics results={filteredResults} />
                     )}
-
                     <div className="w-full min-w-0 mt-2">
                       <ScanFiltersTopBar 
                         currentTab={currentTab} 
@@ -296,14 +237,14 @@ export default function HomeContent() {
                       />
                     </div>
                     {!isScanning && filteredResults.length > 0 && currentTab === 'enchant' && (
-                      <EnchantAiChat results={filteredResults} settings={uiSettings} />
+                      <ErrorBoundary>
+                        <EnchantAiChat results={filteredResults} settings={uiSettings} />
+                      </ErrorBoundary>
                     )}
                   </div>
                 </div>
               </>
             )}
-            
-            {/* removed trailing tags for simplicity of merging outer ternary */}
           </div>
         </main>
       </div>
@@ -315,7 +256,17 @@ export default function HomeContent() {
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav 
+        appMode={appMode} 
+        currentTab={currentTab} 
+        onNavigate={(mode, tab) => {
+          setAppMode(mode);
+          if (tab) setCurrentTab(tab as ScanTab);
+          if (mode === 'island') setCurrentTab('island-dashboard' as ScanTab);
+        }}
+      />
     </div>
   );
 }
-

@@ -28,7 +28,7 @@ export function CraftingCalculator() {
   }, [baseCost, runeCost, runeCost2, runeCost3, runesRequired, targetEnchantLvl, enchantLvl]);
 
   const failureAdjustedCost = totalCost / (1 - (failureRate / 100));
-  const bmTax = Math.floor(bmPrice * 0.045);
+  const bmTax = Math.floor(bmPrice * 0.04);
   const profit = bmPrice - failureAdjustedCost - bmTax;
   const margin = failureAdjustedCost > 0 ? (profit / failureAdjustedCost) * 100 : 0;
 
@@ -150,7 +150,7 @@ export function CraftingCalculator() {
                <div className="text-xl font-mono text-[var(--mw-text-main)] font-black">{formatSilver(failureAdjustedCost)}</div>
             </div>
             <div className="flex flex-col gap-1 items-center justify-center border-l border-[var(--mw-border)]">
-               <div className="text-[var(--mw-text-muted)] text-[10px] uppercase font-bold tracking-widest mb-1">Taxa BM (4.5%)</div>
+               <div className="text-[var(--mw-text-muted)] text-[10px] uppercase font-bold tracking-widest mb-1">Taxa BM (4%)</div>
                <div className="text-xl font-mono text-[var(--mw-red)] font-black">-{formatSilver(bmTax)}</div>
             </div>
             <div className="flex flex-col gap-1 items-center justify-center border-l border-[var(--mw-border)]">

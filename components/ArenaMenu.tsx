@@ -1,20 +1,33 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Swords, TentTree, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+
+// Firebase is optional — only works in AI Studio environment
+let firebaseSignOut: ((auth: any) => Promise<void>) | null = null;
+let firebaseAuth: any = null;
+try {
+  const { signOut } = require('firebase/auth');
+  const { auth } = require('@/lib/firebase');
+  firebaseSignOut = signOut;
+  firebaseAuth = auth;
+} catch (e) {
+  // Firebase not available
+}
 
 interface ArenaMenuProps {
   onSelectModule: (module: 'operations' | 'island' | 'settings') => void;
 }
 
 export function ArenaMenu({ onSelectModule }: ArenaMenuProps) {
+  const [isFirebaseAvailable] = useState(() => !!firebaseSignOut);
+
   const handleLogout = async () => {
+    if (!firebaseSignOut || !firebaseAuth) return;
     try {
-      await signOut(auth);
+      await firebaseSignOut(firebaseAuth);
     } catch (e) {
-      console.error(e);
+      console.warn('[ArenaMenu] Logout failed:', e);
     }
   };
 
@@ -24,6 +37,9 @@ export function ArenaMenu({ onSelectModule }: ArenaMenuProps) {
       <div className="absolute inset-0 z-0">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[var(--mw-gold-primary)]/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-purple-500/3 rounded-full blur-[80px] pointer-events-none" />
+        {/* Gold Particle System */}
+        <div className="gold-particles" />
       </div>
 
       <div className="z-10 w-full max-w-6xl px-4 flex flex-col items-center">
@@ -32,6 +48,10 @@ export function ArenaMenu({ onSelectModule }: ArenaMenuProps) {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16"
         >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--mw-gold-primary)]/10 border border-[var(--mw-gold-primary)]/20 mb-6 animate-fade-up">
+            <span className="w-2 h-2 rounded-full bg-[var(--mw-gold-bright)] animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--mw-gold-bright)]">v2.1 — Motor de Scoring Atualizado</span>
+          </div>
           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-[0.2em] text-[var(--mw-text-main)] drop-shadow-2xl">
             Aureus <span className="text-[var(--mw-gold-bright)]">Arena</span>
           </h1>
@@ -46,7 +66,7 @@ export function ArenaMenu({ onSelectModule }: ArenaMenuProps) {
             whileHover={{ scale: 1.02, y: -5 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onSelectModule('operations')}
-            className="relative group overflow-hidden rounded-2xl border border-[var(--mw-border)] bg-[var(--mw-card)] p-8 text-left transition-all hover:border-[var(--mw-gold-primary)] hover:shadow-[0_0_40px_-10px_rgba(201,168,76,0.3)] aspect-[2/1] flex flex-col justify-end"
+            className="relative group overflow-hidden rounded-2xl border border-[var(--mw-border)] bg-[var(--mw-card)]/80 backdrop-blur-sm p-8 text-left transition-all hover:border-[var(--mw-gold-primary)] hover:shadow-[0_0_40px_-10px_rgba(201,168,76,0.3)] aspect-[2/1] flex flex-col justify-end"
           >
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--mw-card)] via-[var(--mw-card)]/80 to-transparent z-10" />
             
@@ -71,7 +91,7 @@ export function ArenaMenu({ onSelectModule }: ArenaMenuProps) {
             whileHover={{ scale: 1.02, y: -5 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onSelectModule('island')}
-            className="relative group overflow-hidden rounded-2xl border border-emerald-900/50 bg-[var(--mw-card)] p-8 text-left transition-all hover:border-emerald-500 hover:shadow-[0_0_40px_-10px_rgba(16,185,129,0.3)] aspect-[2/1] flex flex-col justify-end"
+            className="relative group overflow-hidden rounded-2xl border border-emerald-900/50 bg-[var(--mw-card)]/80 backdrop-blur-sm p-8 text-left transition-all hover:border-emerald-500 hover:shadow-[0_0_40px_-10px_rgba(16,185,129,0.3)] aspect-[2/1] flex flex-col justify-end"
           >
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--mw-card)] via-[var(--mw-card)]/80 to-transparent z-10" />
 
@@ -110,15 +130,19 @@ export function ArenaMenu({ onSelectModule }: ArenaMenuProps) {
             <span className="text-sm font-bold uppercase tracking-wider">Configurações</span>
           </button>
           
-          <div className="w-px h-4 bg-[var(--mw-border)]" />
-          
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-rose-500/70 hover:text-rose-400 transition-colors px-4 py-2"
-          >
-            <LogOut size={18} />
-            <span className="text-sm font-bold uppercase tracking-wider">Sair</span>
-          </button>
+          {isFirebaseAvailable && (
+            <>
+              <div className="w-px h-4 bg-[var(--mw-border)]" />
+              
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-rose-500/70 hover:text-rose-400 transition-colors px-4 py-2"
+              >
+                <LogOut size={18} />
+                <span className="text-sm font-bold uppercase tracking-wider">Sair</span>
+              </button>
+            </>
+          )}
         </motion.div>
       </div>
     </div>

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useSessionStats } from '@/hooks/useSessionStats';
 import { formatSilver, formatTimeAgo } from '@/lib/albion/utils';
-import { db } from '@/lib/firebase';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { Trophy, Activity, Wallet, MapPin, PackageOpen, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseItemId } from '@/lib/albion/utils';
 import Image from 'next/image';
+
+import { db } from '@/lib/firebase';
+import { query, collection, orderBy, limit, getDocs } from 'firebase/firestore';
 
 interface DashboardProps {
   stats: ReturnType<typeof useSessionStats>['stats'];
@@ -30,19 +31,23 @@ export function Dashboard({ stats, refreshes, isNewRecord }: DashboardProps) {
 
   useEffect(() => {
     const fetchGlobalBest = async () => {
+      if (!db) {
+        setLoading(false);
+        return;
+      }
       try {
         const q = query(collection(db, 'bestFlips'), orderBy('profit', 'desc'), limit(10));
         const snap = await getDocs(q);
-        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as BestFlip));
+        const data = snap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() } as BestFlip));
         setGlobalBest(data);
       } catch (err) {
-        console.error(err);
+        console.warn('[Dashboard] Firebase not available:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchGlobalBest();
-  }, [stats.highestProfit]); // Refresh when user gets a new high score
+  }, [stats.highestProfit]);
 
   const maxDist = Math.max(...Object.values(stats.profitDistribution));
 
