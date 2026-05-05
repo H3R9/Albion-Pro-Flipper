@@ -1,0 +1,147 @@
+import React from 'react';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { AnalysisSummary } from './engine';
+import { ArrowRight, ShoppingCart, TrendingUp, Package, MoveRight } from 'lucide-react';
+import Image from 'next/image';
+
+import { getItemIconUrl } from '@/lib/albion/utils';
+
+interface Props {
+  summary: AnalysisSummary;
+}
+
+function formatSilver(amount: number) {
+  return new Intl.NumberFormat('pt-BR').format(Math.floor(amount));
+}
+
+export function ActionPlanView({ summary }: Props) {
+  const enchantPlans = [...summary.plans]
+    .filter(p => p.action === 'ENCHANT')
+    .sort((a, b) => {
+      const roiA = a.profitDelta / Math.max(1, a.totalMaterialCostReal);
+      const roiB = b.profitDelta / Math.max(1, b.totalMaterialCostReal);
+      if (Math.abs(roiA - roiB) < 0.01) {
+        return b.profitDelta - a.profitDelta;
+      }
+      return roiB - roiA;
+    });
+
+  const sellPlans = [...summary.plans]
+    .filter(p => p.action === 'SELL_FLAT')
+    .sort((a, b) => b.totalExpectedRevenue - a.totalExpectedRevenue);
+
+  return (
+    <div className="flex flex-col gap-6 mt-6 animate-in fade-in duration-500">
+      <Card className="p-8 border-[var(--mw-gold-primary)]/30 border-2 relative overflow-hidden bg-black/40">
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[var(--mw-gold-primary)] to-[var(--mw-gold-dark)]" />
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="flex flex-col gap-1 p-4 bg-[var(--mw-bg)] border border-[var(--mw-border)] rounded-xl">
+             <span className="text-sm text-[var(--mw-text-muted)] uppercase tracking-wider font-bold">Ganho Estimado</span>
+             <span className="text-2xl font-black text-[var(--mw-text-main)]">{formatSilver(summary.totalExpectedRevenue)}</span>
+          </div>
+          <div className="flex flex-col gap-1 p-4 bg-[var(--mw-bg)] border border-[var(--mw-border)] rounded-xl">
+             <span className="text-sm text-[var(--mw-text-muted)] uppercase tracking-wider font-bold">Custo de Mercado (Faltantes)</span>
+             <span className="text-2xl font-black text-red-400">-{formatSilver(summary.totalShoppingCost)}</span>
+          </div>
+          <div className="flex flex-col gap-1 p-4 bg-[var(--mw-bg)] border border-[var(--mw-border)] rounded-xl ring-1 ring-[var(--mw-gold-primary)]/50">
+             <span className="text-sm text-[var(--mw-gold-primary)] uppercase tracking-wider font-bold">Lucro Líquido Real</span>
+             <span className="text-2xl font-black text-[var(--mw-green)]">+{formatSilver(summary.netProfit)}</span>
+          </div>
+        </div>
+
+        {enchantPlans.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-black text-[var(--mw-gold-primary)] uppercase flex items-center gap-2 mb-4 tracking-widest border-b border-[var(--mw-border)] pb-2">
+              <TrendingUp size={20} /> Encantar — Ação Recomendada
+            </h3>
+            <div className="flex flex-col gap-4">
+              {enchantPlans.map((plan, i) => (
+                <div key={i} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-[var(--mw-border)] bg-[var(--mw-bg)]/80 rounded-xl relative overflow-hidden group hover:border-[var(--mw-gold-primary)]/50 transition-colors">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--mw-gold-primary)]/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="flex items-center gap-4">
+                    {plan.item.exactId && (
+                      <div className="relative w-12 h-12 flex-shrink-0">
+                        <Image src={getItemIconUrl(plan.item.exactId, 1, 50)} alt={plan.item.name} fill sizes="48px" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[var(--mw-text-main)]">{plan.item.name}</span>
+                        <Badge variant="outline" className="text-xs text-[var(--mw-gold-primary)] border-[var(--mw-gold-primary)]/30">x{plan.item.quantity}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm mt-1">
+                        <span className="text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment}</span>
+                        <MoveRight size={14} className="text-[var(--mw-gold-primary)]" />
+                        <span className="text-[var(--mw-gold-bright)] font-bold">T{plan.item.tier}.{plan.targetEnchantment}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1 text-sm md:items-end">
+                    <span className="text-[var(--mw-text-muted)] mt-1">ROI: <span className="text-[var(--mw-gold-primary)] font-black">{((plan.profitDelta / Math.max(1, plan.totalMaterialCostReal)) * 100).toFixed(1)}%</span></span>
+                    <span className="text-[var(--mw-text-muted)]">Custo de Mats: <span className="text-red-400">-{formatSilver(plan.totalMaterialCostReal)}</span></span>
+                    <span className="text-[var(--mw-text-muted)]">Lucro Extra: <span className="text-[var(--mw-green)] font-bold">+{formatSilver(plan.profitDelta)}</span></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {sellPlans.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-black text-[var(--mw-text-main)] uppercase flex items-center gap-2 mb-4 tracking-widest border-b border-[var(--mw-border)] pb-2">
+              <Package size={20} /> Vender Flat — Não Encantar
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {sellPlans.map((plan, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 border border-[var(--mw-border)] rounded-lg bg-[var(--mw-bg)]/50">
+                  {plan.item.exactId && (
+                    <div className="relative w-8 h-8 flex-shrink-0">
+                      <Image src={getItemIconUrl(plan.item.exactId, 1, 40)} alt={plan.item.name} fill sizes="32px" />
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-[var(--mw-text-main)]">{plan.item.name} <span className="text-[var(--mw-text-muted)] font-normal text-xs ml-1">x{plan.item.quantity}</span></span>
+                    <span className="text-xs text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {summary.shoppingList.length > 0 && (
+          <div>
+             <h3 className="text-lg font-black text-[var(--mw-text-main)] uppercase flex items-center gap-2 mb-4 tracking-widest border-b border-[var(--mw-border)] pb-2">
+              <ShoppingCart size={20} /> Lista de Compras
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...summary.shoppingList].sort((a, b) => b.totalCost - a.totalCost).map((shop, i) => (
+                <div key={i} className="flex items-center gap-3 p-4 border border-[var(--mw-border)] rounded-xl bg-[var(--mw-bg)]">
+                  <div className="w-10 h-10 relative flex-shrink-0">
+                    <Image 
+                      src={getItemIconUrl(`T${shop.tier}_${shop.type === 'runa' ? 'RUNE' : shop.type === 'alma' ? 'SOUL' : 'RELIC'}`, 1, 50)} 
+                      alt={shop.type} 
+                      fill 
+                      sizes="40px"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-[var(--mw-text-main)] capitalize">{shop.type} T{shop.tier}</span>
+                    <span className="text-sm text-[var(--mw-text-muted)]">Comprar: <span className="text-[var(--mw-gold-primary)] font-bold">{shop.amountNeeded}x</span></span>
+                    <span className="text-xs text-[var(--mw-text-muted)] mt-1">Custo Total: {formatSilver(shop.totalCost)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </Card>
+    </div>
+  );
+}
