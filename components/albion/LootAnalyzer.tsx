@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Brain, RefreshCw, AlertTriangle, ArrowRight, Save, Calculator } from 'lucide-react';
+import { Brain, RefreshCw, AlertTriangle, ArrowRight, Save, Calculator, Wallet } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { toast } from 'sonner';
 
@@ -19,6 +20,8 @@ export function LootAnalyzer() {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
+  
+  const [budgetStr, setBudgetStr] = useState<string>('');
   
   const [isFetchingMarket, setIsFetchingMarket] = useState(false);
   const [analysisSummary, setAnalysisSummary] = useState<AnalysisSummary | null>(null);
@@ -104,7 +107,10 @@ export function LootAnalyzer() {
         if (item.category === 'RELIQUIA') currentStock.reliquias[item.tier] = (currentStock.reliquias[item.tier] || 0) + item.quantity;
       });
 
-      const summary = analyzeLoot(extractedItems, marketData, currentStock);
+      const parsedBudget = budgetStr.trim() ? parseInt(budgetStr.replace(/\D/g, ''), 10) : Infinity;
+      const finalBudget = isNaN(parsedBudget) ? Infinity : parsedBudget;
+
+      const summary = analyzeLoot(extractedItems, marketData, currentStock, finalBudget);
       setAnalysisSummary(summary);
       
     } catch (err: any) {
@@ -190,26 +196,45 @@ export function LootAnalyzer() {
           <ExtractedItemsList items={extractedItems} />
 
           {extractedItems.length > 0 && (
-            <div className="flex flex-col gap-3 mt-6">
-              <Button
-                onClick={handleSaveToInventory}
-                disabled={isSavingInventory}
-                variant="outline"
-                className="w-full border-[var(--mw-border)] text-sm py-4"
-              >
-                {isSavingInventory ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
-                Salvar Materiais no Planejador
-              </Button>
+            <div className="flex flex-col gap-5 mt-6">
+              
+              <div className="bg-[var(--mw-bg)] border border-[var(--mw-border)] p-4 rounded-xl">
+                <label className="flex items-center gap-2 text-sm uppercase tracking-widest text-[var(--mw-text-muted)] mb-3">
+                  <Wallet size={16} /> Prata Disponível (Orçamento)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Ex: 4000000 (Deixe vazio para infinito)"
+                  value={budgetStr}
+                  onChange={e => setBudgetStr(e.target.value)}
+                  className="bg-black/50 border-[var(--mw-border)] font-mono"
+                />
+                <p className="text-xs text-[var(--mw-text-muted)] mt-2">
+                  Otimiza os itens focando nos de maior lucro (ROI) que cabem no seu bolso para comprar materiais.
+                </p>
+              </div>
 
-              <Button
-                onClick={handleGenerateMarketPlan}
-                disabled={isFetchingMarket || extractedItems.filter(i => i.exactId).length === 0}
-                className="w-full bg-[var(--mw-green)] hover:bg-[var(--mw-green)]/90 text-black font-bold uppercase tracking-widest text-sm py-4 group"
-              >
-                {isFetchingMarket ? <RefreshCw className="animate-spin" size={18} /> : <Calculator size={18} />}
-                {isFetchingMarket ? 'Estudando Mercado...' : 'Traçar Plano de Venda para BM'}
-                {!isFetchingMarket && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
-              </Button>
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={handleSaveToInventory}
+                  disabled={isSavingInventory}
+                  variant="outline"
+                  className="w-full border-[var(--mw-border)] text-sm py-4"
+                >
+                  {isSavingInventory ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
+                  Salvar Materiais no Planejador
+                </Button>
+
+                <Button
+                  onClick={handleGenerateMarketPlan}
+                  disabled={isFetchingMarket || extractedItems.filter(i => i.exactId).length === 0}
+                  className="w-full bg-[var(--mw-green)] hover:bg-[var(--mw-green)]/90 text-black font-bold uppercase tracking-widest text-sm py-4 group"
+                >
+                  {isFetchingMarket ? <RefreshCw className="animate-spin" size={18} /> : <Calculator size={18} />}
+                  {isFetchingMarket ? 'Estudando Mercado...' : 'Traçar Plano Otimizado'}
+                  {!isFetchingMarket && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /> }
+                </Button>
+              </div>
             </div>
           )}
         </Card>
@@ -220,7 +245,7 @@ export function LootAnalyzer() {
            <div className="flex flex-col items-center justify-center py-10 gap-4">
              <RefreshCw size={32} className="animate-spin text-[var(--mw-gold-primary)]" />
              <p className="text-[var(--mw-text-muted)] uppercase tracking-widest text-sm font-bold animate-pulse">
-               Processando preços e calculando rotas...
+               Processando preços e calculando a melhor rota para sua prata...
              </p>
            </div>
         </Card>

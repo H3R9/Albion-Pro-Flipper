@@ -56,10 +56,9 @@ function getCheapestMaterialPrice(tier: number, type: 'runa' | 'alma' | 'reliqui
   return Math.min(...matPrices.map(p => p.sell_price_min));
 }
 
-export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], currentStock: MaterialStock): AnalysisSummary {
+export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], currentStock: MaterialStock, budget: number = Infinity): AnalysisSummary {
   const plans: ActionPlan[] = [];
   
-  // Clone stock so we can deduct
   const stockCopy: MaterialStock = {
     runas: { ...currentStock.runas },
     almas: { ...currentStock.almas },
@@ -67,6 +66,22 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
   };
 
   const shoppingListMap: Record<string, ShoppingListItem> = {};
+
+  interface Candidate {
+    itemRef: ExtractedItem;
+    baseId: string;
+    currentEnchant: number;
+    currentPrice: number;
+    targetEnchant: number;
+    targetPrice: number;
+    profitDelta: number;
+    materialSteps: { type: 'runa' | 'alma' | 'reliquia', amount: number, unitCost: number }[];
+    totalMaterialCostReal: number;
+    roi: number;
+  }
+
+  const allCandidates: Candidate[] = [];
+  const nonCandidates: ExtractedItem[] = [];
 
   for (const item of items) {
     if (['RUNA', 'ALMA', 'RELIQUIA', 'OUTRO'].includes(item.category) || !item.exactId) {
@@ -78,30 +93,21 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
     
     let bestTargetEnchant = item.enchantment;
     let maxProfitDelta = 0;
-    let bestMaterialSteps: ActionPlan['materialSteps'] = [];
+    let bestMaterialSteps: Candidate['materialSteps'] = [];
 
-    // Evaluate all possible enchantments above current
     for (let target = item.enchantment + 1; target <= 3; target++) {
       const targetId = `${baseId}@${target}`;
       const targetPrice = getBestItemPrice(targetId, prices);
       
       let totalMaterialCost = 0;
-      const stepsToTarget: ActionPlan['materialSteps'] = [];
-      
+      const stepsToTarget: Candidate['materialSteps'] = [];
       const costPerStep = getEnchantCost(item.tier, item.name);
 
       for (let step = item.enchantment; step < target; step++) {
         const matType = step === 0 ? 'runa' : step === 1 ? 'alma' : 'reliquia';
         const matPrice = getCheapestMaterialPrice(item.tier, matType, prices);
         totalMaterialCost += (costPerStep * matPrice);
-        
-        stepsToTarget.push({
-          type: matType,
-          amount: costPerStep,
-          unitCost: matPrice,
-          stockUsed: 0,
-          toBuy: 0
-        });
+        stepsToTarget.push({ type: matType, amount: costPerStep, unitCost: matPrice });
       }
 
       const profitDelta = (targetPrice - currentPrice) - totalMaterialCost;
@@ -114,72 +120,177 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
     }
 
     if (maxProfitDelta > 0 && bestTargetEnchant > item.enchantment) {
-      // We should enchant this item
-      // Process stock deduction for this *winning* route (multiply by quantity of item)
+      const totalCostReal = bestMaterialSteps.reduce((acc, step) => acc + step.amount * step.unitCost, 0);
+      const roi = totalCostReal > 0 ? maxProfitDelta / totalCostReal : Infinity;
       
-      const finalSteps: ActionPlan['materialSteps'] = [];
-      const qty = item.quantity;
+      const c: Candidate = {
+        itemRef: item, baseId, currentEnchant: item.enchantment, currentPrice,
+        targetEnchant: bestTargetEnchant, targetPrice: getBestItemPrice(`${baseId}@${bestTargetEnchant}`, prices),
+        profitDelta: maxProfitDelta, materialSteps: bestMaterialSteps, totalMaterialCostReal: totalCostReal, roi
+      };
       
-      for (const step of bestMaterialSteps) {
-        const totalAmountNeeded = step.amount * qty;
+      for (let i = 0; i < item.quantity; i++) {
+        allCandidates.push(c);
+      }
+    } else {
+      nonCandidates.push(item);
+    }
+  }
+
+  allCandidates.sort((a, b) => b.roi - a.roi);
+
+  let remainingBudget = budget;
+  
+  interface ItemAllocation {
+    candidate: Candidate;
+    enchantedQty: number;
+    aggregatedSteps: { type: 'runa' | 'alma' | 'reliquia', amount: number, unitCost: number, stockUsed: number, toBuy: number }[];
+  }
+  
+  const allocations = new Map<ExtractedItem, ItemAllocation>();
+
+  for (const c of allCandidates) {
+    let alloc = allocations.get(c.itemRef);
+    if (!alloc) {
+      alloc = {
+        candidate: c,
+        enchantedQty: 0,
+        aggregatedSteps: c.materialSteps.map(s => ({ ...s, amount: 0, stockUsed: 0, toBuy: 0 }))
+      };
+      allocations.set(c.itemRef, alloc);
+    }
+
+    let cashNeeded = 0;
+    const tempStock = {
+      runas: { ...stockCopy.runas },
+      almas: { ...stockCopy.almas },
+      reliquias: { ...stockCopy.reliquias },
+    };
+
+    const tempBought: Record<string, number> = {};
+
+    for (const step of c.materialSteps) {
+      let stockAvailable = 0;
+      if (step.type === 'runa') {
+        stockAvailable = tempStock.runas[c.itemRef.tier] || 0;
+        const used = Math.min(stockAvailable, step.amount);
+        tempStock.runas[c.itemRef.tier] -= used;
+        const toBuy = step.amount - used;
+        cashNeeded += toBuy * step.unitCost;
+        tempBought[`runa_${c.itemRef.tier}`] = toBuy;
+      } else if (step.type === 'alma') {
+        stockAvailable = tempStock.almas[c.itemRef.tier] || 0;
+        const used = Math.min(stockAvailable, step.amount);
+        tempStock.almas[c.itemRef.tier] -= used;
+        const toBuy = step.amount - used;
+        cashNeeded += toBuy * step.unitCost;
+        tempBought[`alma_${c.itemRef.tier}`] = toBuy;
+      } else if (step.type === 'reliquia') {
+        stockAvailable = tempStock.reliquias[c.itemRef.tier] || 0;
+        const used = Math.min(stockAvailable, step.amount);
+        tempStock.reliquias[c.itemRef.tier] -= used;
+        const toBuy = step.amount - used;
+        cashNeeded += toBuy * step.unitCost;
+        tempBought[`reliquia_${c.itemRef.tier}`] = toBuy;
+      }
+    }
+
+    if (cashNeeded <= remainingBudget) {
+      remainingBudget -= cashNeeded;
+      alloc.enchantedQty++;
+      
+      // Officially deduct and record
+      for (let i = 0; i < c.materialSteps.length; i++) {
+        const step = c.materialSteps[i];
         let stockAvailable = 0;
+        let toBuy = 0;
+        let used = 0;
         
         if (step.type === 'runa') {
-          stockAvailable = stockCopy.runas[item.tier] || 0;
-          const used = Math.min(stockAvailable, totalAmountNeeded);
-          stockCopy.runas[item.tier] -= used;
-          const toBuy = totalAmountNeeded - used;
-          finalSteps.push({ ...step, amount: totalAmountNeeded, stockUsed: used, toBuy });
-          
+          stockAvailable = stockCopy.runas[c.itemRef.tier] || 0;
+          used = Math.min(stockAvailable, step.amount);
+          stockCopy.runas[c.itemRef.tier] -= used;
+          toBuy = step.amount - used;
           if (toBuy > 0) {
-            const key = `runa_${item.tier}`;
-            if (!shoppingListMap[key]) shoppingListMap[key] = { type: 'runa', tier: item.tier, amountNeeded: 0, unitCost: step.unitCost, totalCost: 0 };
+            const key = `runa_${c.itemRef.tier}`;
+            if (!shoppingListMap[key]) shoppingListMap[key] = { type: 'runa', tier: c.itemRef.tier, amountNeeded: 0, unitCost: step.unitCost, totalCost: 0 };
             shoppingListMap[key].amountNeeded += toBuy;
             shoppingListMap[key].totalCost += (toBuy * step.unitCost);
           }
         } else if (step.type === 'alma') {
-          stockAvailable = stockCopy.almas[item.tier] || 0;
-          const used = Math.min(stockAvailable, totalAmountNeeded);
-          stockCopy.almas[item.tier] -= used;
-          const toBuy = totalAmountNeeded - used;
-          finalSteps.push({ ...step, amount: totalAmountNeeded, stockUsed: used, toBuy });
-
+          stockAvailable = stockCopy.almas[c.itemRef.tier] || 0;
+          used = Math.min(stockAvailable, step.amount);
+          stockCopy.almas[c.itemRef.tier] -= used;
+          toBuy = step.amount - used;
           if (toBuy > 0) {
-            const key = `alma_${item.tier}`;
-            if (!shoppingListMap[key]) shoppingListMap[key] = { type: 'alma', tier: item.tier, amountNeeded: 0, unitCost: step.unitCost, totalCost: 0 };
+            const key = `alma_${c.itemRef.tier}`;
+            if (!shoppingListMap[key]) shoppingListMap[key] = { type: 'alma', tier: c.itemRef.tier, amountNeeded: 0, unitCost: step.unitCost, totalCost: 0 };
             shoppingListMap[key].amountNeeded += toBuy;
             shoppingListMap[key].totalCost += (toBuy * step.unitCost);
           }
         } else if (step.type === 'reliquia') {
-          stockAvailable = stockCopy.reliquias[item.tier] || 0;
-          const used = Math.min(stockAvailable, totalAmountNeeded);
-          stockCopy.reliquias[item.tier] -= used;
-          const toBuy = totalAmountNeeded - used;
-          finalSteps.push({ ...step, amount: totalAmountNeeded, stockUsed: used, toBuy });
-
+          stockAvailable = stockCopy.reliquias[c.itemRef.tier] || 0;
+          used = Math.min(stockAvailable, step.amount);
+          stockCopy.reliquias[c.itemRef.tier] -= used;
+          toBuy = step.amount - used;
           if (toBuy > 0) {
-            const key = `reliquia_${item.tier}`;
-            if (!shoppingListMap[key]) shoppingListMap[key] = { type: 'reliquia', tier: item.tier, amountNeeded: 0, unitCost: step.unitCost, totalCost: 0 };
+            const key = `reliquia_${c.itemRef.tier}`;
+            if (!shoppingListMap[key]) shoppingListMap[key] = { type: 'reliquia', tier: c.itemRef.tier, amountNeeded: 0, unitCost: step.unitCost, totalCost: 0 };
             shoppingListMap[key].amountNeeded += toBuy;
             shoppingListMap[key].totalCost += (toBuy * step.unitCost);
           }
         }
+        
+        alloc.aggregatedSteps[i].amount += step.amount;
+        alloc.aggregatedSteps[i].stockUsed += used;
+        alloc.aggregatedSteps[i].toBuy += toBuy;
       }
+    }
+  }
 
-      const targetPrice = getBestItemPrice(`${baseId}@${bestTargetEnchant}`, prices);
+  // Construct plans
+  for (const item of items) {
+    if (['RUNA', 'ALMA', 'RELIQUIA', 'OUTRO'].includes(item.category) || !item.exactId) {
+      continue;
+    }
+
+    const alloc = allocations.get(item);
+    
+    if (alloc && alloc.enchantedQty > 0) {
+      const qty = alloc.enchantedQty;
+      const c = alloc.candidate;
       
       plans.push({
-        item,
+        item: { ...item, quantity: qty },
         action: 'ENCHANT',
-        targetEnchantment: bestTargetEnchant,
-        currentPrice: currentPrice * qty,
-        targetPrice: targetPrice * qty,
-        materialSteps: finalSteps,
-        totalMaterialCostReal: bestMaterialSteps.reduce((acc, step) => acc + (step.amount * step.unitCost * qty), 0),
-        profitDelta: maxProfitDelta * qty,
-        totalExpectedRevenue: targetPrice * qty
+        targetEnchantment: c.targetEnchant,
+        currentPrice: c.currentPrice * qty,
+        targetPrice: c.targetPrice * qty,
+        materialSteps: alloc.aggregatedSteps,
+        totalMaterialCostReal: alloc.aggregatedSteps.reduce((acc, step) => acc + (step.amount * step.unitCost), 0),
+        profitDelta: c.profitDelta * qty,
+        totalExpectedRevenue: c.targetPrice * qty
       });
+      
+      const missingQty = item.quantity - qty;
+      if (missingQty > 0) {
+        plans.push({
+          item: { ...item, quantity: missingQty },
+          action: 'SELL_FLAT',
+          targetEnchantment: item.enchantment,
+          currentPrice: c.currentPrice * missingQty,
+          targetPrice: c.currentPrice * missingQty,
+          materialSteps: [],
+          totalMaterialCostReal: 0,
+          profitDelta: 0,
+          totalExpectedRevenue: c.currentPrice * missingQty
+        });
+      }
     } else {
+      // Was candidate but qty=0 (no budget), or was nonCandidate
+      const baseId = item.exactId.split('@')[0];
+      const currentPrice = getBestItemPrice(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, prices);
+      
       plans.push({
         item,
         action: 'SELL_FLAT',
