@@ -1,52 +1,51 @@
-# 🏰 CODEX Aureus Analytics - Mega Análise do Sistema & Plano de Melhorias
+# 🏰 CODEX Aureus Analytics - Arquitetura e Visão Global do Sistema
 
-Bem-vindo ao centro de comando e supervisão do **Aureus Analytics**. Este documento contém a análise profunda do sistema, sua arquitetura técnica e um plano de ataque estruturado para implementarmos as "Melhorias Significativas" solicitadas.
-
----
-
-## 🔎 Análise Profunda do Sistema Atual (Auditoria)
-
-Após uma imersão profunda no ecossistema atual (Next.js 15, Tailwind v4, Albion Data API, Firebase), identificamos os seguintes pontos críticos e oportunidades de melhoria:
-
-### 1. Gargalos de Performance e Renderização
-*   **A "Dor" do React (Ciclo de Memoization):** O componente `VirtualizedResultsList.tsx` recebe os resultados (`results`) e realiza um `useMemo` com `scoreFlip()` aplicando matemática iterativa sob centenas/milhares de itens a cada nova listagem. Isso pesa no *Main Thread* do navegador do usuário.
-*   *Solução:* Transferir toda a responsabilidade de *Scoring* (`flipScore`) para o Worker/Engine na etapa de Análise (`lib/albion/analysis.ts`). A UI deve receber o dado mastigado e se preocupar apenas em pintar na tela a lista virtualizada.
-
-### 2. Gerenciamento de Estado Monolítico
-*   **O "God Hook":** O `useScanLogic.ts` está assumindo responsabilidades demais (controles de UI, filtros, settings, trigger de refresh, notificações, etc.). 
-*   *Solução:* A longo prazo, a ferramenta se beneficiaria absurdamente da introdução de uma library state-manager leve (como **Zustand**), removendo a sobrecarga do React Context/Prop Drilling e dividindo os estados de *Market*, *Island* e *Settings* em mini-stores independentes.
-
-### 3. Rate Limits e Carga de API
-*   **Throttling API Comunitária:** Atualmente temos um `fetchWithMutex` com delays estáticos e um fallback para `Retry-After`. Quando pedimos milhares de itens de uma só vez para a API do Albion Data Project, o servidor pode nos recusar.
-*   *Solução:* Implementação de uma esteira assíncrona mais agressiva, processando em Background Tasks com limites estritos (Rate Limiter nativo). O *Batch Volume* já foi otimizado para requisições rápidas de volume24h de até 2000 items em ~4 segundos.
-
-### 4. Inteligência Visual (Gráficos e Time-Series)
-*   **Dados Frios vs. Tendências:** Temos o `fetchPriceTrend`, mas o usuário só vê o dado atual e uma seta, não confia instintivamente na mudança de preço.
-*   *Solução:* Introduzir as bibliotecas gráficas avançadas (`Recharts`) no interior do `TradeCard` para plotar um mini-gráfico (Sparkline) de 24h ou 7-dias.
+Bem-vindo ao **CODEX do Aureus Analytics**. Este documento foi completamente reescrito para refletir o estado atual avançado da nossa infraestrutura, que evoluiu de um simples scanner de mercado para uma suíte completa de ferramentas financeiras, de logística, refino e ilhas para o Albion Online.
 
 ---
 
-## 🚀 Plano de Melhorias Significativas (Execução Sugerida)
+## 🏛️ Arquitetura Técnica e Tecnologias
 
-Com base na auditoria, proponho realizar as seguintes melhorias na aplicação (passo a passo):
+Nossa stack é moderna, baseada no ambiente seguro e escalável do React Next.js:
 
-### Passo 1: Otimização Extrema (Refatoração do Motor de Score)
-*   Remover a lógica do `scoreFlip` e `adjustedProfit` da camada visualização (`VirtualizedResultsList.tsx`).
-*   Aplicar o Score diretamente nas rotinas de `analyzeBlackTrades`, `analyzeRoyalBM`, etc.
-*   **Benefício:** O React não vai mais "resmungar", a rolagem dos cards na tela ficará fixa em 60 a 120 frames por segundo, não importando se houver 5.000 resultados na tela.
-
-### Passo 2: Webhooks Automatizados Inteligentes (Discord/Telegram)
-*   Adicionar campo `Webhook URL` no menu de configurações (`SettingsDashboard`).
-*   No motor de Notificações, ao cruzar o limite `alertSettings.minProfit`, efetuar um POST invisível do Payload direto pro Discord com Rich Embed de cores baseado na raridade/lucro do item.
-*   **Benefício:** O usuário poderá fechar a aba principal e apenas aguardar as notificações chegarem em seu celular no canal privado no Telegram/Discord.
-
-### Passo 3: Introdução Visual em Alta Fidelidade Gráfica (Histórico de Trading)
-*   Expandir as informações detalhadas em de *TradeCard* e exibir Mini Gráficos (Sparklines) do comportamento do mercado nas últimas X horas.
-*   **Benefício:** Maior precisão para o Player tomar decisão se a alta do item era especulativa no dia anterior ou real.
-
-### Passo 4: Refatoração da Camada de Configuração e Persistência
-*   Isolamento e centralização do LocalStorage (`usePersistedState`) num ambiente mais estrito (Zustand ou Hooks divididos para Settings e Engine). 
+*   **Core:** Next.js 15 (App Router Server & Client Components) + React 19.
+*   **Design System:** Tailwind CSS v4 com customizações em variáveis de ambiente (`CSS variables`) para temas escuros (`#0a0a0c`, `cyanPoder`, `goldPrimary`), adotando o modelo *Pixel Perfect* e design fluido/responsivo. UI construída com componentes Shadcn e ícones Lucide-React.
+*   **Dados in-memory & API:** Consumo massivo e intensivo da *Albion Data Project API* (`/lib/albion/api.ts`). Processamento via Web Workers/Hooks (`useAlbionData`, `useScanLogic`), garantindo resiliência em falhas de API com algoritmos de Retries.
+*   **Backend & Persistência:** Integração robusta com *Firebase* (Auth, Firestore) permitindo que perfis de usuários e análises longas sejam salvas em Cloud (`lib/firebase.ts`, `AuthProvider.tsx`).
+*   **Performance Engine:** Renderização virtualizada de milhares de dados em tempo real (`@tanstack/react-virtual` em `VirtualizedResultsList.tsx`) e controle de estado unificado.
+*   **Inteligência Artificial (Gemini):** Ferramentas analíticas potencializadas por Agentes GenAI integrados, ajudando usuários na tomada de decisões em mercados dinâmicos (`MaterialsAiChat`, `EnchantAiChat`).
 
 ---
 
-> *Este CODEX será a fonte primária da verdade técnica desta Ferramenta de Análise do Albion. A partir desta análise profunda, podemos começar a executar as modificações na sequência acima!*
+## ⚙️ Módulos e Funcionalidades Core
+
+O **Aureus Analytics** está dividido em pilares lógicos de atuação in-game:
+
+### 1. Market Scanner (Scan de Análise de Trading)
+O coração comercial da ferramenta, capaz de raspar oportunidades de arbitragem através do tempo e através das cidades de Albion.
+*   **Análise de Flipping Direto:** Diferença entre Ordens de Venda (`sell orders`) e Ordens de Compra (`buy orders`).
+*   **Crafting Oculto (Enchanting):** Analisa se vale a pena comprar itens de base limpos (`.0`) e usar Runas/Almas/Relíquias para promover até `.3 / .4` em busca de lucros marginais invisíveis a jogadores normais (`enchant-trades.ts`).
+*   **Cards de Decisão Rápida (`TradeCard`):** Exibe de relance margens, ROI, cenários prospectivos de lucro (otimista, pessimista), gráficos de volume e confiabilidade do dado (*Data Quality*).
+
+### 2. Painel de Construção e Trabalhadores de Ilhas (Island Hub)
+Fatores microeconômicos de propriedades de jogadores.
+*   **Laborers Profit Calculator:** Gerenciamento refinado de Diários de Trabalhadores (Cheios e Vazios). Cálculos probabilísticos baseados nos retornos de diários até T8.
+*   **Fish Chopper (Mercado de Peixe):** Uma ferramenta matemática engenhosa que calcula a métrica crucial de comprar picar peixes, baseado na receita bruta do Molho de Peixe derivado vs O custo da matéria bruta de todos os rios/mares.
+
+### 3. Engine Mestra de Refino (Refining Calculator)
+Uma calculadora pixel-perfect que simula o sistema econômico profundo de refino.
+*   **Destiny Board (Specs):** Implementação da regra matemática de *Foco de Refino*. Nível máximo ajustado para `100`. Bônus passivos cruzados: `+250` spec primária e `+30` em conexões da mesma árvore matemática.
+*   **Eficiência e Silver / Foco:** Aplicação perfeita da equação de Focus Cost = `Base * 0.5 ^ (Eficiência / 10000)`, retornando com precisão centesimal a força (Silver/Focus) de cada operação.
+*   **Logística em Cadeia:** Agrupamento coerente de custos que sangram lucros (Taxa de Estação % e Frete Transporte de Carga por Unidade e Cidades com bônus geográfico).
+
+---
+
+## 🚀 Estado do Desenvolvimento & Próximos Alvos
+
+Atualmente a ferramenta se prova altamente madura, confiável matematicamente e sofisticada visualmente. Os esforços futuros (norteadores) de desenvolvimento englobam:
+
+1.  **Macro-Gerenciamento de Multi-Contas no Firestore:** Criar um painel onde donos de Ilhas Multi-Contas logados via Firebase podem salvar suas baterias logísticas e rodá-las uma vez por dia sob novos preços da API.
+2.  **Criação Customizada e Crafting:** Expandir o escopo do mercado de refinadores para os Crafters de Itens de Batalha (Blacksmiths, Tailors), englobando custos de Diários Vazios nas oficinas.
+3.  **Black Market Dashboard Avançado:** Fazer o Scanner conversar ativamente com o comportamento errático do Mercado Negro, detectando ondas de compra massivas de itens específicos.
+
+> *Este é o CODEX Master atual do Aureus Analytics. Ele reflete a verdade atual da aplicação. A escalabilidade foi garantida e o design modelado minuciosamente está estabelecido.*

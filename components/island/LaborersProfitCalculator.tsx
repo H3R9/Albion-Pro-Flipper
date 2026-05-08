@@ -61,6 +61,7 @@ export function LaborersProfitCalculator() {
       items.add(`T${t}_FISH_SALTWATER_ALL_COMMON`);
       items.add(`T${t}_FISH_FRESHWATER_FOREST_RARE`);
       items.add(`T${t}_FISH_FRESHWATER_MOUNTAIN_RARE`);
+      items.add(`T${t}_FISH_FRESHWATER_HIGHLANDS_RARE`);
       items.add(`T${t}_FISH_FRESHWATER_STEPPE_RARE`);
       items.add(`T${t}_FISH_FRESHWATER_SWAMP_RARE`);
       items.add(`T${t}_FISH_SALTWATER_ALL_RARE`);
@@ -376,6 +377,7 @@ export function LaborersProfitCalculator() {
                     const pRares = [
                       getP(`T${t}_FISH_FRESHWATER_FOREST_RARE`),
                       getP(`T${t}_FISH_FRESHWATER_MOUNTAIN_RARE`),
+                      getP(`T${t}_FISH_FRESHWATER_HIGHLANDS_RARE`),
                       getP(`T${t}_FISH_FRESHWATER_STEPPE_RARE`),
                       getP(`T${t}_FISH_FRESHWATER_SWAMP_RARE`),
                       getP(`T${t}_FISH_SALTWATER_ALL_RARE`),

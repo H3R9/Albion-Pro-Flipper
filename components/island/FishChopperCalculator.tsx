@@ -41,11 +41,15 @@ export function FishChopperCalculator() {
   const allNeededItems = useMemo(() => {
     const list = new Set<string>();
     list.add('T1_FISHCHOPS');
+    list.add('T1_FISHSAUCE_LEVEL1');
+    list.add('T1_FISHSAUCE_LEVEL2');
+    list.add('T1_FISHSAUCE_LEVEL3');
     TIERS.forEach(t => {
       list.add(`T${t}_FISH_FRESHWATER_ALL_COMMON`);
       list.add(`T${t}_FISH_SALTWATER_ALL_COMMON`);
       list.add(`T${t}_FISH_FRESHWATER_FOREST_RARE`);
       list.add(`T${t}_FISH_FRESHWATER_MOUNTAIN_RARE`);
+      list.add(`T${t}_FISH_FRESHWATER_HIGHLANDS_RARE`);
       list.add(`T${t}_FISH_FRESHWATER_STEPPE_RARE`);
       list.add(`T${t}_FISH_FRESHWATER_SWAMP_RARE`);
       list.add(`T${t}_FISH_SALTWATER_ALL_RARE`);
@@ -142,7 +146,7 @@ export function FishChopperCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {WATER_TYPES.map(waterType => {
            // Find all items belonging to this water type
-           const itemsForWater = allNeededItems.filter(id => id.includes(`FISH_${waterType}`) || (waterType === 'SALTWATER' && id === 'T1_SEAWEED') || (waterType === 'FRESHWATER' && (id.includes('FOREST') || id.includes('MOUNTAIN') || id.includes('STEPPE') || id.includes('SWAMP') || id.includes('AVALON'))));
+           const itemsForWater = allNeededItems.filter(id => id.includes(`FISH_${waterType}`) || (waterType === 'SALTWATER' && id === 'T1_SEAWEED') || (waterType === 'FRESHWATER' && (id.includes('FOREST') || id.includes('MOUNTAIN') || id.includes('HIGHLANDS') || id.includes('STEPPE') || id.includes('SWAMP') || id.includes('AVALON'))));
            
            // Sort by tier
            itemsForWater.sort((a, b) => {
@@ -176,8 +180,32 @@ export function FishChopperCalculator() {
                    }
                    
                    // Skip rare fish that don't exist in this tier (T4, T6, T8 have no rare fish)
-                   if (yieldAmount === 0) return null;
+                   if (yieldAmount === 0 && itemId !== 'T1_SEAWEED') return null;
                    
+                   if (itemId === 'T1_SEAWEED') {
+                     return (
+                       <div key={itemId} className={cn("bg-black/30 border border-white/5 rounded-xl overflow-hidden flex items-stretch transition-colors hover:border-white/10")}>
+                          <div 
+                            className="p-3 bg-black/40 flex items-center justify-center cursor-pointer hover:bg-white/5"
+                            onClick={() => setPricesModalItem(itemId)}
+                          >
+                            <Image src={getItemIconUrl(itemId)} alt={itemId} width={48} height={48} unoptimized />
+                          </div>
+                          <div className="p-3 flex-1 flex flex-col justify-center">
+                             <h4 className="text-sm font-bold text-white/70 mb-1 leading-tight">{getItemFullName(itemId)}</h4>
+                             <div className="flex items-center gap-4">
+                                <div>
+                                   <p className="text-sm text-white/40 uppercase">Preço Unidade</p>
+                                   <p className="font-mono text-sm font-bold text-white/90">
+                                     {fishPrice === 0 ? '--' : formatSilver(fishPrice)}
+                                   </p>
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+                     );
+                   }
+
                    const totalChoppedValue = yieldAmount * choppedPrice;
                    
                    const profit = totalChoppedValue - fishPrice;
@@ -237,6 +265,75 @@ export function FishChopperCalculator() {
               </div>
            </div>
         )})}
+      </div>
+
+      <div className="mt-8 flex flex-col gap-4">
+        <h2 className="text-xl font-black uppercase text-[var(--mw-text-main)] mb-2">Calculadora de Molho de Peixe</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { id: 'T1_FISHSAUCE_LEVEL1', name: 'Basic Fish Sauce', chops: 15, seaweed: 1 },
+            { id: 'T1_FISHSAUCE_LEVEL2', name: 'Fancy Fish Sauce', chops: 45, seaweed: 3 },
+            { id: 'T1_FISHSAUCE_LEVEL3', name: 'Special Fish Sauce', chops: 135, seaweed: 9 },
+          ].map(sauce => {
+            const saucePrice = getPrice(sauce.id, selectedCity);
+            const seaweedPrice = getPrice('T1_SEAWEED', selectedCity);
+            const cost = (sauce.chops * choppedPrice) + (sauce.seaweed * seaweedPrice);
+            const profit = saucePrice - cost;
+            const isProfitable = profit > 0 && saucePrice > 0 && choppedPrice > 0 && seaweedPrice > 0;
+            const noData = saucePrice === 0 || choppedPrice === 0 || seaweedPrice === 0;
+
+            return (
+              <div key={sauce.id} className={cn("bg-[var(--mw-card)] rounded-xl border p-4 flex flex-col gap-4 relative overflow-hidden",
+                isProfitable ? "border-cyan-500/30" : "border-[var(--mw-border)]"
+              )}>
+                {isProfitable && <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none"></div>}
+                
+                <div className="flex items-center gap-4">
+                  <div className="cursor-pointer" onClick={() => setPricesModalItem(sauce.id)}>
+                    <Image src={getItemIconUrl(sauce.id)} alt={sauce.name} width={56} height={56} unoptimized />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-[var(--mw-text-main)] leading-tight">{getItemFullName(sauce.id)}</h4>
+                    <p className="font-mono text-cyan-400 font-bold">{saucePrice === 0 ? '--' : formatSilver(saucePrice)}</p>
+                  </div>
+                </div>
+
+                <div className="bg-black/20 p-3 rounded-lg border border-white/5 space-y-2">
+                  <p className="text-xs font-bold uppercase text-white/40 tracking-wider mb-2">Ingredientes (Custo)</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Image src={getItemIconUrl('T1_FISHCHOPS')} alt="Chops" width={24} height={24} unoptimized className="cursor-pointer" onClick={() => setPricesModalItem('T1_FISHCHOPS')} />
+                      <span className="text-sm text-white/70">{sauce.chops}x Picado</span>
+                    </div>
+                    <span className="font-mono text-sm text-white/50">{choppedPrice === 0 ? '--' : formatSilver(sauce.chops * choppedPrice)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Image src={getItemIconUrl('T1_SEAWEED')} alt="Seaweed" width={24} height={24} unoptimized className="cursor-pointer" onClick={() => setPricesModalItem('T1_SEAWEED')} />
+                      <span className="text-sm text-white/70">{sauce.seaweed}x Alga</span>
+                    </div>
+                    <span className="font-mono text-sm text-white/50">{seaweedPrice === 0 ? '--' : formatSilver(sauce.seaweed * seaweedPrice)}</span>
+                  </div>
+                  <div className="border-t border-white/10 pt-2 mt-2 flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase text-white/50">Custo Total:</span>
+                    <span className="font-mono text-sm text-white/90">{noData ? '--' : formatSilver(cost)}</span>
+                  </div>
+                </div>
+
+                <div className={cn("p-3 rounded-lg flex items-center justify-between border", 
+                  isProfitable ? "bg-cyan-500/10 border-cyan-500/20" : "bg-red-500/5 border-red-500/10"
+                )}>
+                  <span className="text-sm font-bold uppercase text-white/70">
+                    {noData ? 'Sem Dados' : (isProfitable ? 'Lucro Craft' : 'Prejuízo Craft')}
+                  </span>
+                  <span className={cn("font-mono font-black", isProfitable ? "text-cyan-400" : "text-red-400")}>
+                    {noData ? '--' : (isProfitable ? '+' : '') + formatSilver(profit)}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <CityPricesModal 
