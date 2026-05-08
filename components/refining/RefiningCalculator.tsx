@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRefiningCalculator, MATERIALS, CITIES } from '@/hooks/useRefiningCalculator';
 import { getItemIconUrl, getItemFullName } from '@/lib/albion/utils';
 import { getRenderId, formatItemName } from '@/lib/albion/analysis/refining';
+import { RefiningOpportunities } from './RefiningOpportunities';
 import { cn } from '@/lib/utils';
 
 const timeAgo = (dateStr: string | undefined) => {
@@ -208,6 +209,24 @@ export function RefiningCalculator() {
               )}
            </div>
         </div>
+
+        {/* SCANNER DE OPORTUNIDADES */}
+        <RefiningOpportunities 
+          material={state.material}
+          mastery={state.mastery}
+          specs={state.specs}
+          stationTax={state.stationTax}
+          hasPremium={state.hasPremium}
+          transportCost={state.transportCost || 0}
+          overrideBaseFocus={state.overrideBaseFocus}
+          onApplyOpportunity={(t, e, bCity, sCity) => {
+            setters.setTier(t);
+            setters.setEnchantment(e);
+            setters.setBuyCity(bCity);
+            setters.setSellCity(sCity);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
 
         {/* PARTE 2: BANCADA E CÁLCULO VISUAL */}
         <section className="bg-[var(--mw-card)] rounded-2xl border border-white/5 p-6 shadow-2xl overflow-hidden relative">
