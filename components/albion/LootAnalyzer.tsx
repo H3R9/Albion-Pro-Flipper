@@ -231,13 +231,13 @@ export function LootAnalyzer() {
                 </label>
                 <Input
                   type="text"
-                  placeholder="Ex: 4000000 (Deixe vazio para infinito)"
+                  placeholder="Ex: 4000000 (Deixe vazio para infinito, ou 0 para usar APENAS o baú)"
                   value={budgetStr}
                   onChange={e => setBudgetStr(e.target.value)}
                   className="bg-black/50 border-[var(--mw-border)] font-mono"
                 />
                 <p className="text-xs text-[var(--mw-text-muted)] mt-2">
-                  Otimiza os itens focando nos de maior lucro (ROI) que cabem no seu bolso para comprar materiais.
+                  As Runas, Almas e Relíquias do seu arquivo/print já são contadas automaticamente. Otimiza os itens focando nos de maior lucro (ROI). Deixe em branco se quiser comprar o que faltar no mercado para lucrar mais. Digite 0 se só quiser gastar o que já tem.
                 </p>
               </div>
 

@@ -31,6 +31,10 @@ export function ActionPlanView({ summary }: Props) {
     .filter(p => p.action === 'SELL_FLAT')
     .sort((a, b) => b.totalExpectedRevenue - a.totalExpectedRevenue);
 
+  const keepPlans = [...summary.plans]
+    .filter(p => p.action === 'KEEP_IN_CHEST')
+    .sort((a, b) => b.profitDelta - a.profitDelta);
+
   return (
     <div className="flex flex-col gap-6 mt-6 animate-in fade-in duration-500">
       <Card className="p-8 border-[var(--mw-gold-primary)]/30 border-2 relative overflow-hidden bg-black/40">
@@ -91,10 +95,44 @@ export function ActionPlanView({ summary }: Props) {
           </div>
         )}
 
+        {keepPlans.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-black text-orange-400 uppercase flex items-center gap-2 mb-4 tracking-widest border-b border-[var(--mw-border)] pb-2">
+              <Package size={20} /> Guardar no Baú (Falta Prata/Materiais)
+            </h3>
+            <div className="flex flex-col gap-4">
+              {keepPlans.map((plan, i) => (
+                <div key={i} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border border-orange-500/30 bg-orange-500/5 rounded-xl">
+                  <div className="flex items-center gap-4">
+                    {plan.item.exactId && (
+                      <div className="relative w-10 h-10 flex-shrink-0 opacity-70 grayscale">
+                        <Image src={getItemIconUrl(plan.item.exactId, 1, 50)} alt={plan.item.name} fill sizes="40px" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[var(--mw-text-main)] text-orange-100">{plan.item.name} <span className="text-xs font-normal">x{plan.item.quantity}</span></span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm mt-1">
+                        <span className="text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment}</span>
+                        <MoveRight size={14} className="text-orange-400" />
+                        <span className="text-orange-300 font-bold">Encantar futuramente para T{plan.item.tier}.{plan.targetEnchantment}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1 text-sm md:items-end">
+                    <span className="text-orange-200">Lucro Potencial Perdido: <strong className="text-orange-400">+{formatSilver(plan.profitDelta)}</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {sellPlans.length > 0 && (
           <div className="mb-8">
             <h3 className="text-lg font-black text-[var(--mw-text-main)] uppercase flex items-center gap-2 mb-4 tracking-widest border-b border-[var(--mw-border)] pb-2">
-              <Package size={20} /> Vender Flat — Não Encantar
+              <ShoppingCart size={20} /> Vender Flat — Não Lucrativo Encantar
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {sellPlans.map((plan, i) => (

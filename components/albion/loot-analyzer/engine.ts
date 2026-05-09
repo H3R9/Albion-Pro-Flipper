@@ -3,7 +3,7 @@ import { MarketData } from '@/lib/albion/types';
 
 export interface ActionPlan {
   item: ExtractedItem;
-  action: 'SELL_FLAT' | 'ENCHANT';
+  action: 'SELL_FLAT' | 'ENCHANT' | 'KEEP_IN_CHEST';
   targetEnchantment: number;
   currentPrice: number;
   targetPrice: number;
@@ -276,18 +276,32 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
       if (missingQty > 0) {
         plans.push({
           item: { ...item, quantity: missingQty },
-          action: 'SELL_FLAT',
-          targetEnchantment: item.enchantment,
+          action: 'KEEP_IN_CHEST',
+          targetEnchantment: c.targetEnchant,
           currentPrice: c.currentPrice * missingQty,
-          targetPrice: c.currentPrice * missingQty,
+          targetPrice: c.targetPrice * missingQty,
           materialSteps: [],
           totalMaterialCostReal: 0,
-          profitDelta: 0,
+          profitDelta: c.profitDelta * missingQty, // potential
           totalExpectedRevenue: c.currentPrice * missingQty
         });
       }
+    } else if (alloc) {
+      // Was candidate but qty=0 (no budget)
+      const c = alloc.candidate;
+      plans.push({
+        item,
+        action: 'KEEP_IN_CHEST',
+        targetEnchantment: c.targetEnchant,
+        currentPrice: c.currentPrice * item.quantity,
+        targetPrice: c.targetPrice * item.quantity,
+        materialSteps: [],
+        totalMaterialCostReal: 0,
+        profitDelta: c.profitDelta * item.quantity, // potential
+        totalExpectedRevenue: c.currentPrice * item.quantity
+      });
     } else {
-      // Was candidate but qty=0 (no budget), or was nonCandidate
+      // Was nonCandidate (not profitable to enchant)
       const baseId = item.exactId.split('@')[0];
       const currentPrice = getBestItemPrice(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, prices);
       
