@@ -38,21 +38,25 @@ export interface AnalysisSummary {
   netProfit: number;
 }
 
-function getBestItemPriceResult(itemId: string, quality: number, prices: MarketData[]): { price: number, date: string, city: string } {
-  let itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === quality);
+function getBestItemPriceResult(itemId: string, quality: number, prices: MarketData[]): { price: number, date: string, city: string, qualityFound: number } {
+  let q = quality;
+  let itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === q);
+  
   // Se não encontrar o preço daquela qualidade exata (excepcional ex.), cai pro padrão (qualidade 1)
   if (itemPrices.length === 0) {
-    itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === 1);
+    q = 1;
+    itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === q);
   }
   // Se ainda não tiver qualidade 1, pega a primeira q tiver (às vezes a API agrega em quality 0 ou sem)
   if (itemPrices.length === 0) {
     itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0);
+    if(itemPrices.length > 0) q = itemPrices[0].quality;
   }
   
-  if (itemPrices.length === 0) return { price: 0, date: '', city: '' };
+  if (itemPrices.length === 0) return { price: 0, date: '', city: '', qualityFound: 1 };
   
   const best = itemPrices.reduce((prev, current) => (prev.sell_price_min > current.sell_price_min) ? prev : current);
-  return { price: best.sell_price_min, date: best.sell_price_min_date, city: best.city };
+  return { price: best.sell_price_min, date: best.sell_price_min_date, city: best.city, qualityFound: best.quality };
 }
 
 function getBestItemPrice(itemId: string, quality: number, prices: MarketData[]): number {
@@ -74,19 +78,35 @@ function getCheapestMaterialPrice(tier: number, type: 'runa' | 'alma' | 'reliqui
 }
 
 function getMonthlyVolume(itemId: string, quality: number, city: string, history: any[]): number {
-  const match = history.find(h => h.item_id === itemId && h.location === city && h.quality === quality);
-  if (!match || !match.data) return 0;
+  let matches = history.filter(h => h.item_id === itemId && h.location === city && h.quality === quality);
+  if (matches.length === 0) {
+    matches = history.filter(h => h.item_id === itemId && h.location === city && h.quality === 1);
+  }
+  if (matches.length === 0) {
+    matches = history.filter(h => h.item_id === itemId && h.location === city);
+  }
+  
+  if (matches.length === 0) return 0;
   
   const now = Date.now();
   const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
   
-  return match.data.reduce((total: number, point: any) => {
-    const timestamp = new Date(point.timestamp).getTime();
-    if (timestamp >= thirtyDaysAgo) {
-      return total + point.item_count;
-    }
-    return total;
-  }, 0);
+  let totalVolume = 0;
+  for (const match of matches) {
+    if (!match.data || !Array.isArray(match.data)) continue;
+    
+    const vol = match.data.reduce((total: number, point: any) => {
+      const ts = typeof point.timestamp === 'string' && point.timestamp.endsWith('Z') ? point.timestamp : `${point.timestamp}Z`;
+      const timestamp = new Date(ts).getTime();
+      if (timestamp >= thirtyDaysAgo) {
+        return total + (point.item_count || 0);
+      }
+      return total;
+    }, 0);
+    totalVolume += vol;
+  }
+  
+  return totalVolume;
 }
 
 export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], history: any[], currentStock: MaterialStock, budget: number = Infinity): AnalysisSummary {
@@ -161,7 +181,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], histor
       const roi = totalCostReal > 0 ? maxProfitDelta / totalCostReal : Infinity;
       
       const targetPriceResult = getBestItemPriceResult(`${baseId}@${bestTargetEnchant}`, itemQuality, prices);
-      const targetVolume = targetPriceResult.city ? getMonthlyVolume(`${baseId}@${bestTargetEnchant}`, itemQuality, targetPriceResult.city, history) : 0;
+      const targetVolume = targetPriceResult.city ? getMonthlyVolume(`${baseId}@${bestTargetEnchant}`, targetPriceResult.qualityFound, targetPriceResult.city, history) : 0;
 
       const c: Candidate = {
         itemRef: item, baseId, currentEnchant: item.enchantment, currentPrice,
@@ -356,7 +376,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], histor
       const baseId = item.exactId.split('@')[0];
       const itemQuality = item.quality || 1;
       const currentPriceResult = getBestItemPriceResult(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, itemQuality, prices);
-      const targetVolume = currentPriceResult.city ? getMonthlyVolume(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, itemQuality, currentPriceResult.city, history) : 0;
+      const targetVolume = currentPriceResult.city ? getMonthlyVolume(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, currentPriceResult.qualityFound, currentPriceResult.city, history) : 0;
       
       plans.push({
         item,

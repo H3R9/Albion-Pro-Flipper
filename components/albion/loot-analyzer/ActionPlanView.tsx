@@ -122,11 +122,12 @@ export function ActionPlanView({ summary }: Props) {
                       <div className={`flex flex-col items-end gap-1 mt-2 text-[11px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-[var(--mw-text-muted)]'}`}>
                         <span className="flex items-center gap-1">
                           {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={12} /> : <Clock size={12} />}
-                          Preço {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                          {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
                         </span>
                         {(plan.targetMonthlyVolume !== undefined) && (
-                          <span className="flex items-center gap-1 text-[var(--mw-text-muted)]">
-                            <TrendingUp size={12} /> {plan.targetMonthlyVolume} vendas/mês
+                          <span className={`flex items-center gap-1 ${plan.targetMonthlyVolume < 100 ? 'text-red-400' : 'text-[var(--mw-text-muted)]'}`}>
+                            {plan.targetMonthlyVolume < 100 ? <AlertTriangle size={12} /> : <TrendingUp size={12} />}
+                            {plan.targetMonthlyVolume} vendas/últimos 30 dias
                           </span>
                         )}
                       </div>
@@ -169,11 +170,12 @@ export function ActionPlanView({ summary }: Props) {
                       <div className={`flex flex-col items-end gap-1 mt-1 text-[11px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-orange-300'}`}>
                         <span className="flex items-center gap-1">
                           {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={12} /> : <Clock size={12} />}
-                          Preço {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                          {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
                         </span>
                         {(plan.targetMonthlyVolume !== undefined) && (
-                          <span className="flex items-center gap-1 opacity-80">
-                            <TrendingUp size={12} /> {plan.targetMonthlyVolume} vendas/mês
+                          <span className={`flex items-center gap-1 ${plan.targetMonthlyVolume < 100 ? 'text-red-400' : 'opacity-80'}`}>
+                            {plan.targetMonthlyVolume < 100 ? <AlertTriangle size={12} /> : <TrendingUp size={12} />}
+                            {plan.targetMonthlyVolume} vendas/últimos 30 dias
                           </span>
                         )}
                       </div>
@@ -208,8 +210,9 @@ export function ActionPlanView({ summary }: Props) {
                            {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
                          </span>
                          {(plan.targetMonthlyVolume !== undefined) && (
-                           <span className="flex items-center gap-1">
-                             <TrendingUp size={10} /> {plan.targetMonthlyVolume} vendas/mês
+                           <span className={`flex items-center gap-1 ${plan.targetMonthlyVolume < 100 ? 'text-red-400 font-bold' : ''}`}>
+                             {plan.targetMonthlyVolume < 100 ? <AlertTriangle size={10} /> : <TrendingUp size={10} />}
+                             {plan.targetMonthlyVolume} vendas / 30d
                            </span>
                          )}
                        </div>

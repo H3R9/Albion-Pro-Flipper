@@ -298,16 +298,20 @@ export function LootAnalyzer() {
 
       {analysisSummary && !isFetchingMarket && (
         <div className="flex flex-col gap-4">
-          <div className="flex justify-end">
-            <Button
-              onClick={handleGenerateMarketPlan}
-              disabled={isFetchingMarket}
-              variant="outline"
-              className="border-[var(--mw-border)] text-sm flex items-center gap-2"
-            >
-              <RefreshCw size={16} />
-              Atualizar Preços do Mercado
-            </Button>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+             <div className="flex flex-col text-sm text-[var(--mw-text-muted)]">
+                 <strong className="text-blue-400 mb-1">Dica de Preços em Tempo Real</strong>
+                 <span>Para forçar a atualização imediata dos preços ao clicar no botão, mantenha o <strong>Albion Data Client</strong> aberto no seu PC ao checar o Mercado no jogo.</span>
+             </div>
+             <Button
+                onClick={handleGenerateMarketPlan}
+                disabled={isFetchingMarket}
+                variant="outline"
+                className="border-[var(--mw-border)] text-sm flex-shrink-0 flex items-center gap-2 hover:bg-blue-500/20"
+              >
+                <RefreshCw size={16} />
+                Atualizar Preços
+              </Button>
           </div>
           <ActionPlanView summary={analysisSummary} />
         </div>
