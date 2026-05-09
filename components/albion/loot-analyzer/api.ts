@@ -13,7 +13,8 @@ function inferCategoryFromUniqueName(uniqueName: string): ItemCategory {
   if (parts.includes('_SOUL')) return 'ALMA';
   if (parts.includes('_RELIC')) return 'RELIQUIA';
   if (parts.includes('_2H')) return 'ARMA_2H';
-  if (parts.includes('_MAIN') || parts.includes('_OFF')) return 'ARMA_1H';
+  if (parts.includes('_MAIN')) return 'ARMA_1H';
+  if (parts.includes('_OFF')) return 'MAO_SECUNDARIA';
   return 'OUTRO';
 }
 

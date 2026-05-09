@@ -18,12 +18,34 @@ export function isTwoHanded(itemName: string): boolean {
   return TWO_HAND_KEYWORDS.some(kw => lower.includes(kw));
 }
 
-export function getEnchantCost(tier: number, itemName: string): number {
-  const costs = ENCHANT_COST[tier] ?? { oneHand: 192, twoHand: 384 };
-  return isTwoHanded(itemName) ? costs.twoHand : costs.oneHand;
+export function getEnchantCost(category: ItemCategory, itemName: string): number {
+  if (category === 'ELMO' || category === 'BOTAS' || category === 'CAPA' || category === 'MAO_SECUNDARIA') return 96;
+  if (category === 'ARMADURA' || category === 'BOLSA') return 192;
+  if (category === 'ARMA_1H') return 288;
+  if (category === 'ARMA_2H') return 384;
+  
+  // Fallbacks by keywords just in case category is OUTRO
+  const lower = itemName.toLowerCase();
+  
+  if (lower.includes('elmo') || lower.includes('capote') || lower.includes('capuz') || 
+      lower.includes('botas') || lower.includes('sapatos') || lower.includes('sandálias') || 
+      lower.includes('capa') || lower.includes('escudo') || lower.includes('tomo') || lower.includes('tocha') || lower.includes('chifre')) {
+    return 96;
+  }
+  
+  if (lower.includes('armadura') || lower.includes('casaco') || lower.includes('robe') || lower.includes('bolsa') || lower.includes('sacola')) {
+    return 192;
+  }
+  
+  if (isTwoHanded(itemName)) {
+    return 384;
+  }
+  
+  // Default to 1H weapon if not matched above
+  return 288;
 }
 
-export type ItemCategory = 'ARMA_2H' | 'ARMA_1H' | 'ARMADURA' | 'ELMO' | 'BOTAS' | 'LUVAS' | 'BOLSA' | 'CAPA' | 'RUNA' | 'ALMA' | 'RELIQUIA' | 'OUTRO';
+export type ItemCategory = 'ARMA_2H' | 'ARMA_1H' | 'MAO_SECUNDARIA' | 'ARMADURA' | 'ELMO' | 'BOTAS' | 'LUVAS' | 'BOLSA' | 'CAPA' | 'RUNA' | 'ALMA' | 'RELIQUIA' | 'OUTRO';
 
 export interface ExtractedItem {
   name: string;

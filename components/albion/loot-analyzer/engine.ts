@@ -101,7 +101,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
       
       let totalMaterialCost = 0;
       const stepsToTarget: Candidate['materialSteps'] = [];
-      const costPerStep = getEnchantCost(item.tier, item.name);
+      const costPerStep = getEnchantCost(item.category, item.name);
 
       for (let step = item.enchantment; step < target; step++) {
         const matType = step === 0 ? 'runa' : step === 1 ? 'alma' : 'reliquia';
