@@ -280,7 +280,20 @@ export function LootAnalyzer() {
       )}
 
       {analysisSummary && !isFetchingMarket && (
-        <ActionPlanView summary={analysisSummary} />
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-end">
+            <Button
+              onClick={handleGenerateMarketPlan}
+              disabled={isFetchingMarket}
+              variant="outline"
+              className="border-[var(--mw-border)] text-sm flex items-center gap-2"
+            >
+              <RefreshCw size={16} />
+              Atualizar Preços do Mercado
+            </Button>
+          </div>
+          <ActionPlanView summary={analysisSummary} />
+        </div>
       )}
     </div>
   );

@@ -7,6 +7,8 @@ export interface ActionPlan {
   targetEnchantment: number;
   currentPrice: number;
   targetPrice: number;
+  targetPriceDate?: string;
+  targetPriceCity?: string;
   materialSteps: { 
     type: 'runa' | 'alma' | 'reliquia', 
     amount: number, 
@@ -35,7 +37,7 @@ export interface AnalysisSummary {
   netProfit: number;
 }
 
-function getBestItemPrice(itemId: string, quality: number, prices: MarketData[]): number {
+function getBestItemPriceResult(itemId: string, quality: number, prices: MarketData[]): { price: number, date: string, city: string } {
   let itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === quality);
   // Se não encontrar o preço daquela qualidade exata (excepcional ex.), cai pro padrão (qualidade 1)
   if (itemPrices.length === 0) {
@@ -46,9 +48,14 @@ function getBestItemPrice(itemId: string, quality: number, prices: MarketData[])
     itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0);
   }
   
-  if (itemPrices.length === 0) return 0;
-  // Get max sell_price_min across cities (optimistic return)
-  return Math.max(...itemPrices.map(p => p.sell_price_min));
+  if (itemPrices.length === 0) return { price: 0, date: '', city: '' };
+  
+  const best = itemPrices.reduce((prev, current) => (prev.sell_price_min > current.sell_price_min) ? prev : current);
+  return { price: best.sell_price_min, date: best.sell_price_min_date, city: best.city };
+}
+
+function getBestItemPrice(itemId: string, quality: number, prices: MarketData[]): number {
+  return getBestItemPriceResult(itemId, quality, prices).price;
 }
 
 function getCheapestMaterialPrice(tier: number, type: 'runa' | 'alma' | 'reliquia', prices: MarketData[]): number {
@@ -83,6 +90,8 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
     currentPrice: number;
     targetEnchant: number;
     targetPrice: number;
+    targetPriceDate?: string;
+    targetPriceCity?: string;
     profitDelta: number;
     materialSteps: { type: 'runa' | 'alma' | 'reliquia', amount: number, unitCost: number }[];
     totalMaterialCostReal: number;
@@ -133,9 +142,11 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
       const totalCostReal = bestMaterialSteps.reduce((acc, step) => acc + step.amount * step.unitCost, 0);
       const roi = totalCostReal > 0 ? maxProfitDelta / totalCostReal : Infinity;
       
+      const targetPriceResult = getBestItemPriceResult(`${baseId}@${bestTargetEnchant}`, itemQuality, prices);
       const c: Candidate = {
         itemRef: item, baseId, currentEnchant: item.enchantment, currentPrice,
-        targetEnchant: bestTargetEnchant, targetPrice: getBestItemPrice(`${baseId}@${bestTargetEnchant}`, itemQuality, prices),
+        targetEnchant: bestTargetEnchant, targetPrice: targetPriceResult.price,
+        targetPriceDate: targetPriceResult.date, targetPriceCity: targetPriceResult.city,
         profitDelta: maxProfitDelta, materialSteps: bestMaterialSteps, totalMaterialCostReal: totalCostReal, roi
       };
       
@@ -276,6 +287,8 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
         targetEnchantment: c.targetEnchant,
         currentPrice: c.currentPrice * qty,
         targetPrice: c.targetPrice * qty,
+        targetPriceDate: c.targetPriceDate,
+        targetPriceCity: c.targetPriceCity,
         materialSteps: alloc.aggregatedSteps,
         totalMaterialCostReal: alloc.aggregatedSteps.reduce((acc, step) => acc + (step.amount * step.unitCost), 0),
         profitDelta: c.profitDelta * qty,
@@ -290,6 +303,8 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
           targetEnchantment: c.targetEnchant,
           currentPrice: c.currentPrice * missingQty,
           targetPrice: c.targetPrice * missingQty,
+          targetPriceDate: c.targetPriceDate,
+          targetPriceCity: c.targetPriceCity,
           materialSteps: [],
           totalMaterialCostReal: 0,
           profitDelta: c.profitDelta * missingQty, // potential
@@ -305,6 +320,8 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
         targetEnchantment: c.targetEnchant,
         currentPrice: c.currentPrice * item.quantity,
         targetPrice: c.targetPrice * item.quantity,
+        targetPriceDate: c.targetPriceDate,
+        targetPriceCity: c.targetPriceCity,
         materialSteps: [],
         totalMaterialCostReal: 0,
         profitDelta: c.profitDelta * item.quantity, // potential
@@ -314,14 +331,16 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
       // Was nonCandidate (not profitable to enchant)
       const baseId = item.exactId.split('@')[0];
       const itemQuality = item.quality || 1;
-      const currentPrice = getBestItemPrice(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, itemQuality, prices);
+      const currentPriceResult = getBestItemPriceResult(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, itemQuality, prices);
       
       plans.push({
         item,
         action: 'SELL_FLAT',
         targetEnchantment: item.enchantment,
-        currentPrice: currentPrice * item.quantity,
-        targetPrice: currentPrice * item.quantity,
+        currentPrice: currentPriceResult.price * item.quantity,
+        targetPrice: currentPriceResult.price * item.quantity,
+        targetPriceDate: currentPriceResult.date,
+        targetPriceCity: currentPriceResult.city,
         materialSteps: [],
         totalMaterialCostReal: 0,
         profitDelta: 0,

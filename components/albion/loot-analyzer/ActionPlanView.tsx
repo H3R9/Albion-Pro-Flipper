@@ -2,8 +2,10 @@ import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { AnalysisSummary } from './engine';
-import { ArrowRight, ShoppingCart, TrendingUp, Package, MoveRight } from 'lucide-react';
+import { ArrowRight, ShoppingCart, TrendingUp, Package, MoveRight, Clock, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import { getItemIconUrl } from '@/lib/albion/utils';
 
@@ -21,6 +23,27 @@ interface Props {
 
 function formatSilver(amount: number) {
   return new Intl.NumberFormat('pt-BR').format(Math.floor(amount));
+}
+
+function formatOldDate(dateStr?: string) {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    return formatDistanceToNow(date, { addSuffix: true, locale: ptBR });
+  } catch {
+    return dateStr;
+  }
+}
+
+function isDateOld(dateStr?: string) {
+  if (!dateStr) return true;
+  try {
+    const date = new Date(dateStr);
+    const diff = (new Date()).getTime() - date.getTime();
+    return diff > 1000 * 60 * 60 * 24; // > 24 hours
+  } catch {
+    return true;
+  }
 }
 
 export function ActionPlanView({ summary }: Props) {
@@ -91,6 +114,13 @@ export function ActionPlanView({ summary }: Props) {
                   <div className="flex flex-col gap-1 text-sm md:items-end">
                     <span className="text-[var(--mw-text-muted)] mt-1">ROI: <span className="text-[var(--mw-gold-primary)] font-black">{((plan.profitDelta / Math.max(1, plan.totalMaterialCostReal)) * 100).toFixed(1)}%</span></span>
                     <span className="text-[var(--mw-text-muted)]">Lucro Extra: <span className="text-[var(--mw-green)] font-bold">+{formatSilver(plan.profitDelta)}</span></span>
+                    
+                    {plan.targetPriceDate && (
+                      <div className={`flex items-center gap-1 mt-2 text-[11px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-[var(--mw-text-muted)]'}`}>
+                        {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={12} /> : <Clock size={12} />}
+                        Preço {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -125,6 +155,12 @@ export function ActionPlanView({ summary }: Props) {
                   </div>
                   <div className="flex flex-col gap-1 text-sm md:items-end">
                     <span className="text-orange-200">Lucro Potencial Perdido: <strong className="text-orange-400">+{formatSilver(plan.profitDelta)}</strong></span>
+                    {plan.targetPriceDate && (
+                      <div className={`flex items-center gap-1 mt-1 text-[11px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-orange-300'}`}>
+                        {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={12} /> : <Clock size={12} />}
+                        Preço {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -148,6 +184,12 @@ export function ActionPlanView({ summary }: Props) {
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-[var(--mw-text-main)]">{plan.item.name} <span className="text-[var(--mw-text-muted)] font-normal text-xs ml-1">x{plan.item.quantity}</span></span>
                     <span className="text-xs text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment} ({qualityLabels[plan.item.quality || 1]})</span>
+                    {plan.targetPriceDate && (
+                       <div className={`flex items-center gap-1 mt-1 text-[10px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-[var(--mw-text-muted)] opacity-70'}`}>
+                         {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={10} /> : <Clock size={10} />}
+                         {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                       </div>
+                    )}
                   </div>
                 </div>
               ))}
