@@ -26,9 +26,11 @@ function formatSilver(amount: number) {
 }
 
 function formatOldDate(dateStr?: string) {
-  if (!dateStr) return '';
+  if (!dateStr || dateStr.startsWith('0001')) return 'Sem dados';
   try {
-    const date = new Date(dateStr);
+    // A API do Albion Data Project retorna a data em UTC mas sem o 'Z' no final.
+    const utcDateStr = dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`;
+    const date = new Date(utcDateStr);
     return formatDistanceToNow(date, { addSuffix: true, locale: ptBR });
   } catch {
     return dateStr;
@@ -36,9 +38,10 @@ function formatOldDate(dateStr?: string) {
 }
 
 function isDateOld(dateStr?: string) {
-  if (!dateStr) return true;
+  if (!dateStr || dateStr.startsWith('0001')) return true;
   try {
-    const date = new Date(dateStr);
+    const utcDateStr = dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`;
+    const date = new Date(utcDateStr);
     const diff = (new Date()).getTime() - date.getTime();
     return diff > 1000 * 60 * 60 * 24; // > 24 hours
   } catch {
