@@ -2,6 +2,69 @@ import { GoogleGenAI } from '@google/genai';
 import { matchItemName } from '@/lib/albion/item-matcher';
 import { ExtractedItem, ItemCategory } from './constants';
 
+function inferCategoryFromUniqueName(uniqueName: string): ItemCategory {
+  const parts = uniqueName.toUpperCase();
+  if (parts.includes('_HEAD')) return 'ELMO';
+  if (parts.includes('_ARMOR')) return 'ARMADURA';
+  if (parts.includes('_SHOES')) return 'BOTAS';
+  if (parts.includes('_BAG')) return 'BOLSA';
+  if (parts.includes('_CAPE')) return 'CAPA';
+  if (parts.includes('_RUNE')) return 'RUNA';
+  if (parts.includes('_SOUL')) return 'ALMA';
+  if (parts.includes('_RELIC')) return 'RELIQUIA';
+  if (parts.includes('_2H')) return 'ARMA_2H';
+  if (parts.includes('_MAIN') || parts.includes('_OFF')) return 'ARMA_1H';
+  return 'OUTRO';
+}
+
+export async function extractItemsFromCSV(file: File): Promise<ExtractedItem[]> {
+  const text = await file.text();
+  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  if (lines.length === 0) return [];
+
+  // ItemName;UniqueName;Tier;Level;Quality;Quantity;TotalWeight;TotalAvgEstMarketValue
+  const headerLine = lines[0].toLowerCase();
+  if (!headerLine.includes('itemname') || !headerLine.includes('uniquename')) {
+    throw new Error('Formato de CSV inválido. Certifique-se de que é o formato original do exportador de baú.');
+  }
+
+  const items: ExtractedItem[] = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    // Remove aspas simples e duplas no split
+    const parts = lines[i].split(';').map(p => p.replace(/^["'](.*)["']$/, '$1').trim());
+    if (parts.length < 6) continue;
+
+    const itemName = parts[0];
+    let uniqueName = parts[1];
+    const tier = parseInt(parts[2], 10) || 4;
+    const enchantment = parseInt(parts[3], 10) || 0;
+    const quantity = parseInt(parts[5], 10) || 1;
+
+    // Se o uniqueName base tiver @, ele ignora.
+    const baseId = uniqueName.split('@')[0];
+    
+    // Constrói o exactId corretamente, pois pro backend precisa ser sem @ se enchant 0 e com @ se enchant > 0
+    let exactId = baseId;
+    if (enchantment > 0 && !exactId.includes('RUNE') && !exactId.includes('SOUL') && !exactId.includes('RELIC')) {
+        exactId = `${baseId}@${enchantment}`;
+    }
+
+    const category = inferCategoryFromUniqueName(uniqueName);
+
+    items.push({
+      name: itemName,
+      quantity,
+      exactId,
+      tier,
+      enchantment,
+      category,
+    });
+  }
+
+  return items;
+}
+
 export async function extractItemsFromImages(files: File[], apiKey: string): Promise<ExtractedItem[]> {
   const ai = new GoogleGenAI({ apiKey });
 

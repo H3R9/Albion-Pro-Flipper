@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, RefreshCw, AlertTriangle, ArrowRight, Save, Calculator, Wallet } from 'lucide-react';
+import { Brain, RefreshCw, AlertTriangle, ArrowRight, Save, Calculator, Wallet, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -7,7 +7,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { toast } from 'sonner';
 
 import { ExtractedItem, MaterialStock } from './loot-analyzer/constants';
-import { extractItemsFromImages } from './loot-analyzer/api';
+import { extractItemsFromImages, extractItemsFromCSV } from './loot-analyzer/api';
 import { analyzeLoot, AnalysisSummary } from './loot-analyzer/engine';
 import { FileUploader } from './loot-analyzer/FileUploader';
 import { ExtractedItemsList } from './loot-analyzer/ExtractedItemsList';
@@ -51,13 +51,40 @@ export function LootAnalyzer() {
     setExtractedItems([]);
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("A chave do Gemini API não está configurada.");
+      const csvFiles = files.filter(f => f.name.toLowerCase().endsWith('.csv'));
+      const imageFiles = files.filter(f => !f.name.toLowerCase().endsWith('.csv'));
+      
+      let allItems: ExtractedItem[] = [];
 
-      const items = await extractItemsFromImages(files, apiKey);
-      setExtractedItems(items);
+      if (csvFiles.length > 0) {
+        for (const csv of csvFiles) {
+          const csvItems = await extractItemsFromCSV(csv);
+          allItems = [...allItems, ...csvItems];
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+        if (!apiKey) throw new Error("A chave do Gemini API não está configurada.");
+
+        const imgItems = await extractItemsFromImages(imageFiles, apiKey);
+        allItems = [...allItems, ...imgItems];
+      }
+
+      // Group identical items
+      const groupedItems = allItems.reduce((acc, item) => {
+        const key = `${item.exactId || item.name}_${item.tier}_${item.enchantment}`;
+        if (!acc[key]) {
+          acc[key] = { ...item };
+        } else {
+          acc[key].quantity += item.quantity;
+        }
+        return acc;
+      }, {} as Record<string, ExtractedItem>);
+
+      setExtractedItems(Object.values(groupedItems));
     } catch (err: any) {
-      setError(err.message || 'Ocorreu um erro ao analisar as imagens.');
+      setError(err.message || 'Ocorreu um erro ao analisar os arquivos.');
     } finally {
       setIsAnalyzingImage(false);
     }
@@ -162,7 +189,7 @@ export function LootAnalyzer() {
         <div>
           <h2 className="text-2xl font-black text-[var(--mw-text-main)] uppercase tracking-tight">Analista de Loot IA</h2>
           <p className="text-[var(--mw-text-muted)] text-sm">
-            Faça upload dos prints do seu banco/inventário e descubra o que encantar!
+            Faça upload do arquivo CSV do seu baú ou de imagens (prints), e descubra o que encantar!
           </p>
         </div>
       </div>
@@ -188,7 +215,7 @@ export function LootAnalyzer() {
             className="w-full mt-6 bg-[var(--mw-gold-primary)] hover:bg-[var(--mw-gold-bright)] text-black font-bold uppercase tracking-widest text-sm py-4"
           >
             {isAnalyzingImage ? <RefreshCw className="animate-spin" size={18} /> : <Brain size={18} />}
-            {isAnalyzingImage ? 'Extraindo Itens pela IA...' : 'Ler Itens da Imagem'}
+            {isAnalyzingImage ? 'Aguarde os Itens...' : 'Ler Itens dos Arquivos / Imagens'}
           </Button>
         </Card>
 
