@@ -73,7 +73,8 @@ export function LootAnalyzer() {
 
       // Group identical items
       const groupedItems = allItems.reduce((acc, item) => {
-        const key = `${item.exactId || item.name}_${item.tier}_${item.enchantment}`;
+        const quality = item.quality || 1;
+        const key = `${item.exactId || item.name}_${item.tier}_${item.enchantment}_${quality}`;
         if (!acc[key]) {
           acc[key] = { ...item };
         } else {
@@ -120,7 +121,7 @@ export function LootAnalyzer() {
       const allIds = Array.from(new Set(itemsToFetch)).join(',');
       if (!allIds) throw new Error('Nenhum item válido identificado para buscar no mercado.');
 
-      const url = `https://east.albion-online-data.com/api/v2/stats/Prices/${allIds}.json?locations=Black Market,Caerleon,Lymhurst,Bridgewatch,Martlock,Thetford,Fort Sterling`;
+      const url = `https://east.albion-online-data.com/api/v2/stats/Prices/${allIds}.json?locations=Black Market,Caerleon,Lymhurst,Bridgewatch,Martlock,Thetford,Fort Sterling&qualities=1,2,3,4,5`;
       const res = await fetch(url);
       if (!res.ok) throw new Error('Falha ao conectar com Albion Data Project.');
       const marketData = await res.json();

@@ -7,6 +7,14 @@ import Image from 'next/image';
 
 import { getItemIconUrl } from '@/lib/albion/utils';
 
+const qualityLabels: Record<number, string> = {
+  1: 'Normal',
+  2: 'Boa',
+  3: 'Excepcional',
+  4: 'Excelente',
+  5: 'Obra-prima'
+};
+
 interface Props {
   summary: AnalysisSummary;
 }
@@ -73,7 +81,7 @@ export function ActionPlanView({ summary }: Props) {
                         <Badge variant="outline" className="text-xs text-[var(--mw-gold-primary)] border-[var(--mw-gold-primary)]/30">x{plan.item.quantity}</Badge>
                       </div>
                       <div className="flex items-center gap-2 text-sm mt-1">
-                        <span className="text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment}</span>
+                        <span className="text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment} ({qualityLabels[plan.item.quality || 1]})</span>
                         <MoveRight size={14} className="text-[var(--mw-gold-primary)]" />
                         <span className="text-[var(--mw-gold-bright)] font-bold">T{plan.item.tier}.{plan.targetEnchantment}</span>
                       </div>
@@ -109,7 +117,7 @@ export function ActionPlanView({ summary }: Props) {
                         <span className="font-bold text-[var(--mw-text-main)] text-orange-100">{plan.item.name} <span className="text-xs font-normal">x{plan.item.quantity}</span></span>
                       </div>
                       <div className="flex items-center gap-2 text-sm mt-1">
-                        <span className="text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment}</span>
+                        <span className="text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment} ({qualityLabels[plan.item.quality || 1]})</span>
                         <MoveRight size={14} className="text-orange-400" />
                         <span className="text-orange-300 font-bold">Encantar futuramente para T{plan.item.tier}.{plan.targetEnchantment}</span>
                       </div>
@@ -139,7 +147,7 @@ export function ActionPlanView({ summary }: Props) {
                   )}
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-[var(--mw-text-main)]">{plan.item.name} <span className="text-[var(--mw-text-muted)] font-normal text-xs ml-1">x{plan.item.quantity}</span></span>
-                    <span className="text-xs text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment}</span>
+                    <span className="text-xs text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment} ({qualityLabels[plan.item.quality || 1]})</span>
                   </div>
                 </div>
               ))}

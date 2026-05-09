@@ -35,8 +35,17 @@ export interface AnalysisSummary {
   netProfit: number;
 }
 
-function getBestItemPrice(itemId: string, prices: MarketData[]): number {
-  const itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0);
+function getBestItemPrice(itemId: string, quality: number, prices: MarketData[]): number {
+  let itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === quality);
+  // Se não encontrar o preço daquela qualidade exata (excepcional ex.), cai pro padrão (qualidade 1)
+  if (itemPrices.length === 0) {
+    itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === 1);
+  }
+  // Se ainda não tiver qualidade 1, pega a primeira q tiver (às vezes a API agrega em quality 0 ou sem)
+  if (itemPrices.length === 0) {
+    itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0);
+  }
+  
   if (itemPrices.length === 0) return 0;
   // Get max sell_price_min across cities (optimistic return)
   return Math.max(...itemPrices.map(p => p.sell_price_min));
@@ -89,7 +98,8 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
     }
 
     const baseId = item.exactId.split('@')[0];
-    const currentPrice = getBestItemPrice(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, prices);
+    const itemQuality = item.quality || 1;
+    const currentPrice = getBestItemPrice(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, itemQuality, prices);
     
     let bestTargetEnchant = item.enchantment;
     let maxProfitDelta = 0;
@@ -97,7 +107,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
 
     for (let target = item.enchantment + 1; target <= 3; target++) {
       const targetId = `${baseId}@${target}`;
-      const targetPrice = getBestItemPrice(targetId, prices);
+      const targetPrice = getBestItemPrice(targetId, itemQuality, prices);
       
       let totalMaterialCost = 0;
       const stepsToTarget: Candidate['materialSteps'] = [];
@@ -125,7 +135,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
       
       const c: Candidate = {
         itemRef: item, baseId, currentEnchant: item.enchantment, currentPrice,
-        targetEnchant: bestTargetEnchant, targetPrice: getBestItemPrice(`${baseId}@${bestTargetEnchant}`, prices),
+        targetEnchant: bestTargetEnchant, targetPrice: getBestItemPrice(`${baseId}@${bestTargetEnchant}`, itemQuality, prices),
         profitDelta: maxProfitDelta, materialSteps: bestMaterialSteps, totalMaterialCostReal: totalCostReal, roi
       };
       
@@ -303,7 +313,8 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
     } else {
       // Was nonCandidate (not profitable to enchant)
       const baseId = item.exactId.split('@')[0];
-      const currentPrice = getBestItemPrice(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, prices);
+      const itemQuality = item.quality || 1;
+      const currentPrice = getBestItemPrice(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, itemQuality, prices);
       
       plans.push({
         item,

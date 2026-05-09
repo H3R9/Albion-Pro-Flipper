@@ -40,7 +40,14 @@ export async function extractItemsFromCSV(file: File): Promise<ExtractedItem[]> 
     let uniqueName = parts[1];
     const tier = parseInt(parts[2], 10) || 4;
     const enchantment = parseInt(parts[3], 10) || 0;
+    const qualityRaw = parts[4]?.toLowerCase() || '';
     const quantity = parseInt(parts[5], 10) || 1;
+
+    let quality = 1; // Default to Normal
+    if (qualityRaw.includes('good') || qualityRaw.includes('boa')) quality = 2;
+    else if (qualityRaw.includes('outstanding') || qualityRaw.includes('excepcional')) quality = 3;
+    else if (qualityRaw.includes('excellent') || qualityRaw.includes('excelente')) quality = 4;
+    else if (qualityRaw.includes('masterpiece') || qualityRaw.includes('obra-prima') || qualityRaw.includes('obra prima')) quality = 5;
 
     // Se o uniqueName base tiver @, ele ignora.
     const baseId = uniqueName.split('@')[0];
@@ -60,6 +67,7 @@ export async function extractItemsFromCSV(file: File): Promise<ExtractedItem[]> 
       tier,
       enchantment,
       category,
+      quality,
     });
   }
 
@@ -91,7 +99,8 @@ REGRAS DE LEITURA:
 
 CATEGORIAS (escolha a mais adequada para cada item):
 - ARMA_2H: cajados, arcos longos, foices, alabardas, espadões, machados duplos, maças pesadas, lanças de batalha
-- ARMA_1H: espadas, adagas, machadinhas, tochas, orbes, escudos, focos
+- ARMA_1H: espadas, adagas, machadinhas, maças, cajados de uma mão
+- MAO_SECUNDARIA: tochas, orbes, escudos, focos, chifres, tomos
 - ARMADURA: armadura de peito / robe / gibão
 - ELMO: elmo, capuz, casaco (para a cabeça)
 - BOTAS: botas, sandálias, sapatos
@@ -103,6 +112,14 @@ CATEGORIAS (escolha a mais adequada para cada item):
 - RELIQUIA: qualquer item chamado "Relíquia" (T4–T8)
 - OUTRO: o que não se encaixar
 
+Identifique a QUALIDADE do item:
+1 = Normal
+2 = Boa (Good)
+3 = Excepcional (Outstanding)
+4 = Excelente (Excellent)
+5 = Obra-prima (Masterpiece)
+Coloque 1 se não for possível ver a qualidade.
+
 Retorne EXCLUSIVAMENTE um JSON array válido, sem markdown, no formato:
 [
   {
@@ -110,6 +127,7 @@ Retorne EXCLUSIVAMENTE um JSON array válido, sem markdown, no formato:
     "quantity": 1,
     "tier": 6,
     "enchantment": 1,
+    "quality": 1,
     "category": "ARMA_2H"
   }
 ]
@@ -138,6 +156,7 @@ Retorne EXCLUSIVAMENTE um JSON array válido, sem markdown, no formato:
   const items: ExtractedItem[] = parsed.map((p: any) => {
     const tier        = p.tier       ?? 6;
     const enchantment = p.enchantment ?? 0;
+    const quality     = p.quality ?? 1;
     const category    = (p.category as ItemCategory) ?? 'OUTRO';
 
     let exactId = matchItemName(p.name) ?? null;
@@ -148,7 +167,7 @@ Retorne EXCLUSIVAMENTE um JSON array válido, sem markdown, no formato:
       }
     }
 
-    return { name: p.name, quantity: p.quantity || 1, exactId, tier, enchantment, category };
+    return { name: p.name, quantity: p.quantity || 1, exactId, tier, enchantment, category, quality };
   });
 
   return items;

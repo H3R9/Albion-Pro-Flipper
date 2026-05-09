@@ -7,6 +7,14 @@ interface Props {
   items: ExtractedItem[];
 }
 
+const qualityLabels: Record<number, string> = {
+  1: 'Normal',
+  2: 'Boa',
+  3: 'Excepcional',
+  4: 'Excelente',
+  5: 'Obra-prima'
+};
+
 export function ExtractedItemsList({ items }: Props) {
   return (
     <div className="flex flex-col gap-4">
@@ -24,7 +32,9 @@ export function ExtractedItemsList({ items }: Props) {
           {items.map((item, i) => (
             <div key={i} className="flex items-center justify-between p-3 bg-[var(--mw-bg)] border border-[var(--mw-border)]/50 rounded-lg">
               <div className="flex flex-col">
-                <span className="font-bold text-[var(--mw-text-main)] text-sm">
+                <span className="font-bold text-[var(--mw-text-main)] text-sm border-l-2 pl-2" style={{
+                  borderColor: item.quality === 5 ? '#eab308' : item.quality === 4 ? '#f97316' : item.quality === 3 ? '#a855f7' : item.quality === 2 ? '#3b82f6' : '#64748b'
+                }}>
                   T{item.tier}
                   {item.enchantment > 0
                     ? <span className="text-[var(--mw-gold-primary)]">.{item.enchantment}</span>
@@ -33,7 +43,9 @@ export function ExtractedItemsList({ items }: Props) {
                   {' '}{item.name}
                 </span>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] text-[var(--mw-text-muted)] uppercase tracking-wide">{item.category}</span>
+                  <span className="text-[10px] text-[var(--mw-text-muted)] uppercase tracking-wide">
+                    {item.category} • {qualityLabels[item.quality || 1] || 'Normal'}
+                  </span>
                   {item.exactId ? (
                     <span className="text-xs text-[var(--mw-green)] font-mono">{item.exactId}</span>
                   ) : (

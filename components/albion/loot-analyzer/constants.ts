@@ -54,6 +54,7 @@ export interface ExtractedItem {
   tier: number;
   enchantment: number;
   category: ItemCategory;
+  quality?: number;
 }
 
 export interface MaterialStock {
