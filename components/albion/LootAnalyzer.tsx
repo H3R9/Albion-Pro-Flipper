@@ -118,13 +118,30 @@ export function LootAnalyzer() {
         itemsToFetch.push(`T${t}_RUNE`, `T${t}_SOUL`, `T${t}_RELIC`);
       });
 
-      const allIds = Array.from(new Set(itemsToFetch)).join(',');
-      if (!allIds) throw new Error('Nenhum item válido identificado para buscar no mercado.');
-
+      const allIdsArr = Array.from(new Set(itemsToFetch));
+      if (allIdsArr.length === 0) throw new Error('Nenhum item válido identificado para buscar no mercado.');
+      
+      const allIds = allIdsArr.join(',');
       const url = `https://east.albion-online-data.com/api/v2/stats/Prices/${allIds}.json?locations=Black Market,Caerleon,Lymhurst,Bridgewatch,Martlock,Thetford,Fort Sterling&qualities=1,2,3,4,5`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error('Falha ao conectar com Albion Data Project.');
+      if (!res.ok) throw new Error('Falha ao conectar com Albion Data Project (Preços).');
       const marketData = await res.json();
+      
+      const historyData: any[] = [];
+      const chunkSize = 20;
+      for (let i = 0; i < allIdsArr.length; i += chunkSize) {
+        const chunk = allIdsArr.slice(i, i + chunkSize);
+        const chunkUrl = `https://east.albion-online-data.com/api/v2/stats/History/${chunk.join(',')}.json?locations=Black Market,Caerleon,Lymhurst,Bridgewatch,Martlock,Thetford,Fort Sterling&time-scale=24&qualities=1,2,3,4,5`;
+        try {
+          const hRes = await fetch(chunkUrl);
+          if (hRes.ok) {
+            const hData = await hRes.json();
+            historyData.push(...hData);
+          }
+        } catch (e) {
+          console.warn('Erro ao buscar histórico para chunk', chunk);
+        }
+      }
 
       // Build current stock
       const currentStock: MaterialStock = { runas: {}, almas: {}, reliquias: {} };
@@ -138,7 +155,7 @@ export function LootAnalyzer() {
       const parsedBudget = budgetStr.trim() ? parseInt(budgetStr.replace(/\D/g, ''), 10) : Infinity;
       const finalBudget = isNaN(parsedBudget) ? Infinity : parsedBudget;
 
-      const summary = analyzeLoot(extractedItems, marketData, currentStock, finalBudget);
+      const summary = analyzeLoot(extractedItems, marketData, historyData, currentStock, finalBudget);
       setAnalysisSummary(summary);
       
     } catch (err: any) {

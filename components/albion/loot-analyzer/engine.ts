@@ -9,6 +9,7 @@ export interface ActionPlan {
   targetPrice: number;
   targetPriceDate?: string;
   targetPriceCity?: string;
+  targetMonthlyVolume?: number;
   materialSteps: { 
     type: 'runa' | 'alma' | 'reliquia', 
     amount: number, 
@@ -72,7 +73,23 @@ function getCheapestMaterialPrice(tier: number, type: 'runa' | 'alma' | 'reliqui
   return Math.min(...matPrices.map(p => p.sell_price_min));
 }
 
-export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], currentStock: MaterialStock, budget: number = Infinity): AnalysisSummary {
+function getMonthlyVolume(itemId: string, quality: number, city: string, history: any[]): number {
+  const match = history.find(h => h.item_id === itemId && h.location === city && h.quality === quality);
+  if (!match || !match.data) return 0;
+  
+  const now = Date.now();
+  const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+  
+  return match.data.reduce((total: number, point: any) => {
+    const timestamp = new Date(point.timestamp).getTime();
+    if (timestamp >= thirtyDaysAgo) {
+      return total + point.item_count;
+    }
+    return total;
+  }, 0);
+}
+
+export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], history: any[], currentStock: MaterialStock, budget: number = Infinity): AnalysisSummary {
   const plans: ActionPlan[] = [];
   
   const stockCopy: MaterialStock = {
@@ -92,6 +109,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
     targetPrice: number;
     targetPriceDate?: string;
     targetPriceCity?: string;
+    targetMonthlyVolume?: number;
     profitDelta: number;
     materialSteps: { type: 'runa' | 'alma' | 'reliquia', amount: number, unitCost: number }[];
     totalMaterialCostReal: number;
@@ -143,10 +161,13 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
       const roi = totalCostReal > 0 ? maxProfitDelta / totalCostReal : Infinity;
       
       const targetPriceResult = getBestItemPriceResult(`${baseId}@${bestTargetEnchant}`, itemQuality, prices);
+      const targetVolume = targetPriceResult.city ? getMonthlyVolume(`${baseId}@${bestTargetEnchant}`, itemQuality, targetPriceResult.city, history) : 0;
+
       const c: Candidate = {
         itemRef: item, baseId, currentEnchant: item.enchantment, currentPrice,
         targetEnchant: bestTargetEnchant, targetPrice: targetPriceResult.price,
         targetPriceDate: targetPriceResult.date, targetPriceCity: targetPriceResult.city,
+        targetMonthlyVolume: targetVolume,
         profitDelta: maxProfitDelta, materialSteps: bestMaterialSteps, totalMaterialCostReal: totalCostReal, roi
       };
       
@@ -289,6 +310,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
         targetPrice: c.targetPrice * qty,
         targetPriceDate: c.targetPriceDate,
         targetPriceCity: c.targetPriceCity,
+        targetMonthlyVolume: c.targetMonthlyVolume,
         materialSteps: alloc.aggregatedSteps,
         totalMaterialCostReal: alloc.aggregatedSteps.reduce((acc, step) => acc + (step.amount * step.unitCost), 0),
         profitDelta: c.profitDelta * qty,
@@ -305,6 +327,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
           targetPrice: c.targetPrice * missingQty,
           targetPriceDate: c.targetPriceDate,
           targetPriceCity: c.targetPriceCity,
+          targetMonthlyVolume: c.targetMonthlyVolume,
           materialSteps: [],
           totalMaterialCostReal: 0,
           profitDelta: c.profitDelta * missingQty, // potential
@@ -322,6 +345,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
         targetPrice: c.targetPrice * item.quantity,
         targetPriceDate: c.targetPriceDate,
         targetPriceCity: c.targetPriceCity,
+        targetMonthlyVolume: c.targetMonthlyVolume,
         materialSteps: [],
         totalMaterialCostReal: 0,
         profitDelta: c.profitDelta * item.quantity, // potential
@@ -332,6 +356,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
       const baseId = item.exactId.split('@')[0];
       const itemQuality = item.quality || 1;
       const currentPriceResult = getBestItemPriceResult(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, itemQuality, prices);
+      const targetVolume = currentPriceResult.city ? getMonthlyVolume(item.enchantment === 0 ? baseId : `${baseId}@${item.enchantment}`, itemQuality, currentPriceResult.city, history) : 0;
       
       plans.push({
         item,
@@ -341,6 +366,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
         targetPrice: currentPriceResult.price * item.quantity,
         targetPriceDate: currentPriceResult.date,
         targetPriceCity: currentPriceResult.city,
+        targetMonthlyVolume: targetVolume,
         materialSteps: [],
         totalMaterialCostReal: 0,
         profitDelta: 0,

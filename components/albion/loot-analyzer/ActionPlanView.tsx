@@ -119,9 +119,16 @@ export function ActionPlanView({ summary }: Props) {
                     <span className="text-[var(--mw-text-muted)]">Lucro Extra: <span className="text-[var(--mw-green)] font-bold">+{formatSilver(plan.profitDelta)}</span></span>
                     
                     {plan.targetPriceDate && (
-                      <div className={`flex items-center gap-1 mt-2 text-[11px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-[var(--mw-text-muted)]'}`}>
-                        {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={12} /> : <Clock size={12} />}
-                        Preço {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                      <div className={`flex flex-col items-end gap-1 mt-2 text-[11px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-[var(--mw-text-muted)]'}`}>
+                        <span className="flex items-center gap-1">
+                          {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={12} /> : <Clock size={12} />}
+                          Preço {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                        </span>
+                        {(plan.targetMonthlyVolume !== undefined) && (
+                          <span className="flex items-center gap-1 text-[var(--mw-text-muted)]">
+                            <TrendingUp size={12} /> {plan.targetMonthlyVolume} vendas/mês
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -159,9 +166,16 @@ export function ActionPlanView({ summary }: Props) {
                   <div className="flex flex-col gap-1 text-sm md:items-end">
                     <span className="text-orange-200">Lucro Potencial Perdido: <strong className="text-orange-400">+{formatSilver(plan.profitDelta)}</strong></span>
                     {plan.targetPriceDate && (
-                      <div className={`flex items-center gap-1 mt-1 text-[11px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-orange-300'}`}>
-                        {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={12} /> : <Clock size={12} />}
-                        Preço {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                      <div className={`flex flex-col items-end gap-1 mt-1 text-[11px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-orange-300'}`}>
+                        <span className="flex items-center gap-1">
+                          {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={12} /> : <Clock size={12} />}
+                          Preço {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                        </span>
+                        {(plan.targetMonthlyVolume !== undefined) && (
+                          <span className="flex items-center gap-1 opacity-80">
+                            <TrendingUp size={12} /> {plan.targetMonthlyVolume} vendas/mês
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -188,9 +202,16 @@ export function ActionPlanView({ summary }: Props) {
                     <span className="text-sm font-bold text-[var(--mw-text-main)]">{plan.item.name} <span className="text-[var(--mw-text-muted)] font-normal text-xs ml-1">x{plan.item.quantity}</span></span>
                     <span className="text-xs text-[var(--mw-text-muted)]">T{plan.item.tier}.{plan.item.enchantment} ({qualityLabels[plan.item.quality || 1]})</span>
                     {plan.targetPriceDate && (
-                       <div className={`flex items-center gap-1 mt-1 text-[10px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-[var(--mw-text-muted)] opacity-70'}`}>
-                         {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={10} /> : <Clock size={10} />}
-                         {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                       <div className={`flex flex-col gap-1 mt-1 text-[10px] ${isDateOld(plan.targetPriceDate) ? 'text-red-400' : 'text-[var(--mw-text-muted)] opacity-70'}`}>
+                         <span className="flex items-center gap-1">
+                           {isDateOld(plan.targetPriceDate) ? <AlertTriangle size={10} /> : <Clock size={10} />}
+                           {plan.targetPriceCity}: {formatOldDate(plan.targetPriceDate)}
+                         </span>
+                         {(plan.targetMonthlyVolume !== undefined) && (
+                           <span className="flex items-center gap-1">
+                             <TrendingUp size={10} /> {plan.targetMonthlyVolume} vendas/mês
+                           </span>
+                         )}
                        </div>
                     )}
                   </div>
