@@ -344,7 +344,7 @@ export function analyzeLoot(items: ExtractedItem[], prices: MarketData[], curren
         materialSteps: [],
         totalMaterialCostReal: 0,
         profitDelta: 0,
-        totalExpectedRevenue: currentPrice * item.quantity
+        totalExpectedRevenue: currentPriceResult.price * item.quantity
       });
     }
   }
