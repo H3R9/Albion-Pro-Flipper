@@ -40,17 +40,13 @@ export function ActionPlanView({ summary }: Props) {
       <Card className="p-8 border-[var(--mw-gold-primary)]/30 border-2 relative overflow-hidden bg-black/40">
         <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[var(--mw-gold-primary)] to-[var(--mw-gold-dark)]" />
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="flex flex-col gap-1 p-4 bg-[var(--mw-bg)] border border-[var(--mw-border)] rounded-xl">
              <span className="text-sm text-[var(--mw-text-muted)] uppercase tracking-wider font-bold">Ganho Estimado</span>
              <span className="text-2xl font-black text-[var(--mw-text-main)]">{formatSilver(summary.totalExpectedRevenue)}</span>
           </div>
-          <div className="flex flex-col gap-1 p-4 bg-[var(--mw-bg)] border border-[var(--mw-border)] rounded-xl">
-             <span className="text-sm text-[var(--mw-text-muted)] uppercase tracking-wider font-bold">Custo de Mercado (Faltantes)</span>
-             <span className="text-2xl font-black text-red-400">-{formatSilver(summary.totalShoppingCost)}</span>
-          </div>
           <div className="flex flex-col gap-1 p-4 bg-[var(--mw-bg)] border border-[var(--mw-border)] rounded-xl ring-1 ring-[var(--mw-gold-primary)]/50">
-             <span className="text-sm text-[var(--mw-gold-primary)] uppercase tracking-wider font-bold">Lucro Líquido Real</span>
+             <span className="text-sm text-[var(--mw-gold-primary)] uppercase tracking-wider font-bold">Lucro Líquido (Removendo Custos)</span>
              <span className="text-2xl font-black text-[var(--mw-green)]">+{formatSilver(summary.netProfit)}</span>
           </div>
         </div>
@@ -86,7 +82,6 @@ export function ActionPlanView({ summary }: Props) {
 
                   <div className="flex flex-col gap-1 text-sm md:items-end">
                     <span className="text-[var(--mw-text-muted)] mt-1">ROI: <span className="text-[var(--mw-gold-primary)] font-black">{((plan.profitDelta / Math.max(1, plan.totalMaterialCostReal)) * 100).toFixed(1)}%</span></span>
-                    <span className="text-[var(--mw-text-muted)]">Custo de Mats: <span className="text-red-400">-{formatSilver(plan.totalMaterialCostReal)}</span></span>
                     <span className="text-[var(--mw-text-muted)]">Lucro Extra: <span className="text-[var(--mw-green)] font-bold">+{formatSilver(plan.profitDelta)}</span></span>
                   </div>
                 </div>
@@ -155,7 +150,7 @@ export function ActionPlanView({ summary }: Props) {
         {summary.shoppingList.length > 0 && (
           <div>
              <h3 className="text-lg font-black text-[var(--mw-text-main)] uppercase flex items-center gap-2 mb-4 tracking-widest border-b border-[var(--mw-border)] pb-2">
-              <ShoppingCart size={20} /> Lista de Compras
+              <ShoppingCart size={20} /> Lista de Compras Adicional
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...summary.shoppingList].sort((a, b) => b.totalCost - a.totalCost).map((shop, i) => (
@@ -170,8 +165,7 @@ export function ActionPlanView({ summary }: Props) {
                   </div>
                   <div className="flex flex-col">
                     <span className="font-bold text-[var(--mw-text-main)] capitalize">{shop.type} T{shop.tier}</span>
-                    <span className="text-sm text-[var(--mw-text-muted)]">Comprar: <span className="text-[var(--mw-gold-primary)] font-bold">{shop.amountNeeded}x</span></span>
-                    <span className="text-xs text-[var(--mw-text-muted)] mt-1">Custo Total: {formatSilver(shop.totalCost)}</span>
+                    <span className="text-sm text-[var(--mw-text-muted)]">Comprar no Mercado: <span className="text-[var(--mw-gold-primary)] font-bold">{shop.amountNeeded}x</span></span>
                   </div>
                 </div>
               ))}
