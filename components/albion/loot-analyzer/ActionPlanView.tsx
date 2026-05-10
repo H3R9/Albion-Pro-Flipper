@@ -69,6 +69,10 @@ export function ActionPlanView({ summary }: Props) {
     .filter(p => p.action === 'KEEP_IN_CHEST')
     .sort((a, b) => b.profitDelta - a.profitDelta);
 
+  const transportPlans = [...enchantPlans, ...sellPlans]
+    .sort((a, b) => b.totalExpectedRevenue - a.totalExpectedRevenue)
+    .slice(0, 48);
+
   return (
     <div className="flex flex-col gap-6 mt-6 animate-in fade-in duration-500">
       <Card className="p-8 border-[var(--mw-gold-primary)]/30 border-2 relative overflow-hidden bg-black/40">
@@ -217,6 +221,37 @@ export function ActionPlanView({ summary }: Props) {
                          )}
                        </div>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {transportPlans.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-black text-blue-400 uppercase flex items-center gap-2 mb-4 tracking-widest border-b border-[var(--mw-border)] pb-2 flex-wrap">
+              <Package size={20} /> Ordem de Transporte (Top {transportPlans.length} Slots)
+              <span className="text-xs font-normal text-[var(--mw-text-muted)] ml-auto normal-case tracking-normal">Melhores itens para transportar e vender no mercado.</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {transportPlans.map((plan, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 border border-blue-500/30 rounded-lg bg-blue-500/5 relative overflow-hidden group hover:border-blue-500/50 transition-colors">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500/50" />
+                  {plan.item.exactId && (
+                    <div className="relative w-10 h-10 flex-shrink-0">
+                      <Image src={getItemIconUrl(plan.item.exactId, 1, 40)} alt={plan.item.name} fill sizes="40px" />
+                    </div>
+                  )}
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                       <span className="text-sm font-bold text-[var(--mw-text-main)] truncate mr-2" title={plan.item.name}>{plan.item.name}</span>
+                       <Badge variant="outline" className="text-[10px] text-blue-300 border-blue-500/30 h-5 px-1 flex-shrink-0">x{plan.item.quantity}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs text-[var(--mw-text-muted)] flex items-center gap-1">T{plan.item.tier}.{plan.targetEnchantment} {plan.action === 'ENCHANT' && <span className="text-orange-400 font-bold text-[10px]">(Encantar)</span>}</span>
+                      <span className="text-xs font-bold text-[var(--mw-gold-primary)]" title="Faturamento Bruto Esperado">{formatSilver(plan.totalExpectedRevenue)}</span>
+                    </div>
                   </div>
                 </div>
               ))}
