@@ -40,22 +40,22 @@ export interface AnalysisSummary {
 
 function getBestItemPriceResult(itemId: string, quality: number, prices: MarketData[]): { price: number, date: string, city: string, qualityFound: number } {
   let q = quality;
-  let itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === q);
+  let itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === q && p.city === 'Black Market');
   
   // Se não encontrar o preço daquela qualidade exata (excepcional ex.), cai pro padrão (qualidade 1)
   if (itemPrices.length === 0) {
     q = 1;
-    itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === q);
+    itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.quality === q && p.city === 'Black Market');
   }
   // Se ainda não tiver qualidade 1, pega a primeira q tiver (às vezes a API agrega em quality 0 ou sem)
   if (itemPrices.length === 0) {
-    itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0);
+    itemPrices = prices.filter(p => p.item_id === itemId && p.sell_price_min > 0 && p.city === 'Black Market');
     if(itemPrices.length > 0) q = itemPrices[0].quality;
   }
   
   if (itemPrices.length === 0) return { price: 0, date: '', city: '', qualityFound: 1 };
   
-  const best = itemPrices.reduce((prev, current) => (prev.sell_price_min > current.sell_price_min) ? prev : current);
+  const best = itemPrices.reduce((prev, current) => (prev.sell_price_min < current.sell_price_min) ? prev : current);
   return { price: best.sell_price_min, date: best.sell_price_min_date, city: best.city, qualityFound: best.quality };
 }
 
@@ -70,10 +70,9 @@ function getCheapestMaterialPrice(tier: number, type: 'runa' | 'alma' | 'reliqui
     'reliquia': `T${tier}_RELIC`
   };
   const matId = matMap[type];
-  const matPrices = prices.filter(p => p.item_id === matId && p.sell_price_min > 0);
+  const matPrices = prices.filter(p => p.item_id === matId && p.sell_price_min > 0 && p.city !== 'Black Market');
   if (matPrices.length === 0) return 999999; // Prevents buying if not available
   
-  // Exclude Black Market maybe? No, just get absolute cheapest
   return Math.min(...matPrices.map(p => p.sell_price_min));
 }
 
